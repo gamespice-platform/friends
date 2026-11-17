@@ -69,8 +69,8 @@ func _run() -> void:
 ## `GET friends` data, in the shape docs/backbone-contract.md states.
 const SITE_FRIENDS := """[
   { "userId": "clx1", "displayName": "Ashley", "avatarUrl": "https://cdn.tmc.example/a/clx1.png",
-    "presence": { "status": "in_game", "appId": 3, "appName": "Arena", "serverId": 4821,
-      "serverName": "Arena #1", "partyId": "9007199254740993", "joinable": true,
+    "presence": { "status": "in_game", "appId": 3, "appName": "FC", "serverId": 4821,
+      "serverName": "FC #1", "partyId": "9007199254740993", "joinable": true,
       "detail": "Round 3 of 5", "updatedAt": "2026-09-23T20:00:00.000Z" } },
   { "userId": "clx2", "displayName": "Bo", "avatarUrl": null,
     "presence": { "status": "offline", "appId": null, "appName": null, "serverId": null,
@@ -95,8 +95,8 @@ func _test_shapes() -> void:
 	var ash: DotFriend = (listed.value as Array)[0]
 	var p := ash.presence
 	_check(ash.user_id == "clx1" and ash.avatar_url.ends_with("clx1.png"), "a friend keeps their id and avatar")
-	_check(p.status == DotPresence.Status.IN_GAME and p.app_id == 3 and p.app_name == "Arena", "in_game, in which app")
-	_check(p.server_id == 4821 and p.server_name == "Arena #1", "on which server, as the site's integer id")
+	_check(p.status == DotPresence.Status.IN_GAME and p.app_id == 3 and p.app_name == "FC", "in_game, in which app")
+	_check(p.server_id == 4821 and p.server_name == "FC #1", "on which server, as the site's integer id")
 	_check(p.party_id == "9007199254740993", "a party id past 2^53 survives, because it is a string")
 	_check(p.joinable and p.detail == "Round 3 of 5", "joinable, with the game's line")
 	_check(p.updated_at == 1790193600, "an ISO time with milliseconds and a Z reads as the right second")
@@ -210,8 +210,8 @@ func _test_presence_privacy() -> void:
 	_section("Presence is shown to friends only, and hidden means offline")
 
 	var hub := _hub()
-	hub.server_names[4821] = "Arena #1"
-	var ada := hub.as_user("ada", "Ada", 3, "Arena")
+	hub.server_names[4821] = "FC #1"
+	var ada := hub.as_user("ada", "Ada", 3, "FC")
 	var bo := hub.as_user("bo", "Bo")
 	var cy := hub.as_user("cy", "Cy")
 	_befriend(hub, "ada", "bo")
@@ -220,7 +220,7 @@ func _test_presence_privacy() -> void:
 	_check(posted.ok and int((posted.value as Dictionary)["ttlSec"]) == 120, "a post is accepted with the site's lifetime")
 	var seen: DotPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
 	_check(seen.status == DotPresence.Status.IN_GAME and seen.server_id == 4821 and seen.party_id == "4471", "a friend sees where they are")
-	_check(seen.app_name == "Arena" and seen.server_name == "Arena #1", "in which app, from the token rather than the post, and the server's name")
+	_check(seen.app_name == "FC" and seen.server_name == "FC #1", "in which app, from the token rather than the post, and the server's name")
 	_check(seen.updated_at == _now[0], "stamped when it was posted")
 	var list_row: DotFriend = (bo.friends().value as Array)[0]
 	_check(list_row.presence.same_as(seen), "the friends list and the presence route agree")
@@ -394,7 +394,7 @@ func _test_presence_posting() -> void:
 	counting.hub = hub
 	counting.user_id = "ada"
 	counting.app_id = 3
-	counting.app_name = "Arena"
+	counting.app_name = "FC"
 
 	var client := _client(counting)
 	client.config.presence_debounce_sec = 0.5
@@ -457,7 +457,7 @@ func _presence_in_flight(hub: DotFriendsLocalHub) -> void:
 	slow.hub = hub
 	slow.user_id = "ada"
 	slow.app_id = 3
-	slow.app_name = "Arena"
+	slow.app_name = "FC"
 	var sc := _client(slow)
 	sc.config.presence_debounce_sec = 0.1
 	sc.advance(0.2)
