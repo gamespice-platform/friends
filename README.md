@@ -1,4 +1,4 @@
-[![Friends - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/258-dot-friends)
+[![Friends - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/70-gs-friends)
 
 A friends list for your game, wired to the TMC website: who is online, what they are playing, on which server and in which party, and a Join button that takes a player to where their friend is.
 
