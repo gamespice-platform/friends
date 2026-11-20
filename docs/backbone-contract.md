@@ -1,6 +1,6 @@
 # The backbone contract
 
-What dot-friends speaks. Every route is under `/api/app/v1`, authenticated by the player's app token (`Authorization: Bearer <AppToken>`), and in the app API's envelope: `{ ok: true, data }` or `{ ok: false, code, message, retryAfter? }` (`src/types/app-api/contract.ts`). For a refusal, `code` is an i18n key. Each route must allow `GAME` tokens, because that is the token a game holds.
+What GameSpice Friends speaks. Every route is under `/api/app/v1`, authenticated by the player's app token (`Authorization: Bearer <AppToken>`), and in the app API's envelope: `{ ok: true, data }` or `{ ok: false, code, message, retryAfter? }` (`src/types/app-api/contract.ts`). For a refusal, `code` is an i18n key. Each route must allow `GAME` tokens, because that is the token a game holds.
 
 These routes were specified alongside this addon and are implemented on website-city, where `docs/api/app-social.md` documents them from the site's side; when the two disagree, that page and the site's code are the truth and this one changes. Against a site without them, `DotFriendsBackendApp` turns a bare 404 into "the site has no app friends routes yet" rather than into a refusal, and logs it once at INFO.
 
@@ -27,7 +27,7 @@ Presence = { status: "offline" | "online" | "in_game" | "away",
 Request  = { id, userId, displayName, createdAt }
 ```
 
-- `serverId` is the site's `Server.id`, an integer, as dot-party already has it.
+- `serverId` is the site's `Server.id`, an integer, as GameSpice Party already has it.
 - `partyId` is a **decimal string**, as dot-party's party ids are: they can pass 2^53, and JSON would round one into somebody else's party.
 - `Request.id` is the site's `UserFriendship.id`, an integer. It goes back as `requestId` exactly as it came.
 - `Request.userId` is the **other** person: the sender of an incoming request, the addressee of an outgoing one.
@@ -60,10 +60,10 @@ The site's tRPC friend procedures (`src/server/api/routers/user/social/friend.ts
 | `presence.deny.detail` | `detail` over 128 characters | — |
 | `presence.deny.batch` | more than 100 ids | — |
 
-And these are the client's own, never sent by the site: `friends.join.deny.notFriend`, `.offline`, `.notJoinable`, `.unsupported`. The site carries their text anyway, in `locales/en/friends.json` under `join.deny`, so a game rendering refusals from the site's files through dot-locale finds them there; three of the four take a `{name}`, so pass it: `loc.explain(res.error, {"name": friend.display_name})`.
+And these are the client's own, never sent by the site: `friends.join.deny.notFriend`, `.offline`, `.notJoinable`, `.unsupported`. The site carries their text anyway, in `locales/en/friends.json` under `join.deny`, so a game rendering refusals from the site's files through GameSpice Locale finds them there; three of the four take a `{name}`, so pass it: `loc.explain(res.error, {"name": friend.display_name})`.
 
-## What dot-friends duplicates on purpose
+## What GameSpice Friends duplicates on purpose
 
 `DotFriendsLocalHub` is the site's friend router, rule for rule: one row per pair whoever asked first; **asking somebody who already asked you accepts them** rather than failing; only the declined sender waits the seven days, and the person who declined may always ask; a re-request after a decline re-uses the row and turns it round to face whoever asked last; only the addressee may answer, and anything else is "not found" rather than "not yours"; removing deletes the row, so both have to ask again.
 
-It is a copy for the reason dot-party's `CanJoinParty` is: a LAN with no website still has to answer these questions, and a game developed against one set of rules must not meet a different set on launch day. **A change to any of these rules on the site needs the same change here.**
+It is a copy for the reason GameSpice Party's `CanJoinParty` is: a LAN with no website still has to answer these questions, and a game developed against one set of rules must not meet a different set on launch day. **A change to any of these rules on the site needs the same change here.**

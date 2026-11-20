@@ -1,6 +1,6 @@
 # Design
 
-Why dot-friends is shaped the way it is, and why the obvious alternative is wrong in each case. The wire is in [backbone-contract.md](backbone-contract.md).
+Why GameSpice Friends is shaped the way it is, and why the obvious alternative is wrong in each case. The wire is in [backbone-contract.md](backbone-contract.md).
 
 ## Why this exists
 
@@ -10,7 +10,7 @@ website-city has had friends for a long time (`UserFriendship`, one row per pair
 
 `DotFriendsLocalHub` follows the site's friend router: asking somebody who already asked you **accepts** them ("what the user obviously means"); only the declined sender waits seven days, and the one who declined may always ask; a re-request re-uses the row, turned round to face the new asker; only the addressee may answer, and everything else is "not found" rather than "not yours", so a requester cannot decline their own request into a cooldown against the person they asked; removing deletes the row; a sender may withdraw a pending request (`cancel_request`), leaving no cooldown. Request ids are the site's integers (`UserFriendship.id`), so `DotFriendRequest.id` is an `int` and goes back as `requestId` unchanged.
 
-It is a copy for the reason dot-party's local hub is: a LAN with no website still has to answer these questions, and a game developed against one set of rules must not meet a different set on launch day.
+It is a copy for the reason GameSpice Party's local hub is: a LAN with no website still has to answer these questions, and a game developed against one set of rules must not meet a different set on launch day.
 
 ## Offline is a blank
 
@@ -54,6 +54,6 @@ A bare 404 is a site that does not serve the routes, not an outage. `_call` says
 
 - **The site's routes.** website-city is its own repository; they are documented in its `docs/api/app-social.md`. Deployment is the operator's.
 - **Blocking, friend search and suggestions.** The site has all three behind tRPC; none is in the app contract yet. A game that needs one adds a route to the contract first.
-- **A friends UI.** dot-ui draws; this emits.
+- **A friends UI.** GameSpice UI draws; this emits.
 - **Push.** The site pushes nothing to a game, so this polls. A socket would replace the poll in `DotFriendsClient` and nothing else.
-- **Turning a server id into an address.** A presence carries the site's server id; `connect_fn` is the game's, usually through dot-browser or the site's connect route.
+- **Turning a server id into an address.** A presence carries the site's server id; `connect_fn` is the game's, usually through GameSpice Browser or the site's connect route.

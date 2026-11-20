@@ -27,9 +27,9 @@ extends Node
 ## news — so [signal request_received] fires for each the first time it is seen.
 ##
 ## [b]Joining a friend names nothing.[/b] [member join_party_fn] is the game's "join this
-## party" (usually dot-party's client, wrapped in a lambda), [member connect_fn] its "connect
+## party" (usually GameSpice Party's client, wrapped in a lambda), [member connect_fn] its "connect
 ## to this server". Neither type is named here, so a game without parties still follows
-## friends to their server, and one without dot-party does not fail to parse.
+## friends to their server, and one without GameSpice Party does not fail to parse.
 
 const CHANNEL := "friends.client"
 
@@ -57,13 +57,13 @@ signal request_failed(what: String, error: DotError)
 var backend: DotFriendsBackend = null
 
 ## [code]func(party_id: String, friend: DotFriend) -> DotResult[/code], awaited. The game's
-## "join this party". dot-party's client fits in one lambda:
+## "join this party". GameSpice Party's client fits in one lambda:
 ## [code]func(pid, _f): return await party.join(pid)[/code].
 var join_party_fn: Callable = Callable()
 
 ## [code]func(server_id: int, friend: DotFriend) -> DotResult[/code], awaited. The game's
 ## "connect to this server"; the site's server id is all a presence carries, so turning it
-## into an address is the game's (usually through dot-browser or the site's connect route).
+## into an address is the game's (usually through GameSpice Browser or the site's connect route).
 var connect_fn: Callable = Callable()
 
 ## The current list. Empty until the first successful poll; [member loaded] says which.

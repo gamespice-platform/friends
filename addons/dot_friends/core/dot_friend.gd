@@ -3,8 +3,8 @@ extends RefCounted
 
 ## One accepted friend, and where they are, as [code]GET friends[/code] returns them.
 ##
-## [member user_id] is the backbone's user id — the same string dot-party's members carry
-## and the one a dot-server session sees as [code]backbone:<user_id>[/code]. Friends are
+## [member user_id] is the backbone's user id — the same string GameSpice Party's members carry
+## and the one a GameSpice Server session sees as [code]backbone:<user_id>[/code]. Friends are
 ## matched by it and never by name, because a display name is the one field a stranger
 ## can copy.
 

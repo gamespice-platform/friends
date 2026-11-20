@@ -1,10 +1,10 @@
-# dot-friends
+# GameSpice Friends
 
 The player's friends list and presence, from the TMC backbone: who is online, in which game, on which server and in which party, whether they can be joined, and "join my friend", which hands off to the game's party or connect code without naming either.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is specific to friends. Anything that talks to website-city: [docs/backbone.md](../../docs/backbone.md).
 
-**The distributable is `addons/dot_friends/`.** It requires [dot-core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored). dot-auth's client, dot-party's client and the game's connect function are reached by duck typing and never named.
+**The distributable is `addons/dot_friends/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored). dot-auth's client, dot-party's client and the game's connect function are reached by duck typing and never named.
 
 ## Read before
 
@@ -22,7 +22,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_friend.gd` | `DotFriend`: one friend and their presence, as `GET friends` returns them |
 | `core/dot_friend_request.gd` | `DotFriendRequest`: one pending request, incoming or outgoing; integer id |
 | `backend/dot_friends_backend.gd` | `DotFriendsBackend`: the interface. Every method may await; call them all with `await` |
-| `backend/dot_friends_backend_app.gd` | `DotFriendsBackendApp`: the site as the player, through dot-auth's `post_app`/`get_app` (preferred), a token and a `DotHttp`, or `request_fn` |
+| `backend/dot_friends_backend_app.gd` | `DotFriendsBackendApp`: the site as the player, through GameSpice Auth's `post_app`/`get_app` (preferred), a token and a `DotHttp`, or `request_fn` |
 | `backend/dot_friends_local_hub.gd`, `dot_friends_backend_local.gd` | the site's rules in-process: LAN, offline, suites. One hub, one backend per person |
 | `dot_friends_config.gd` | `DotFriendsConfig`: poll, heartbeat and debounce timings |
 | `runtime/dot_friends_client.gd` | `DotFriendsClient`: the player's node. Polls, posts presence, diffs snapshots into signals, joins a friend |

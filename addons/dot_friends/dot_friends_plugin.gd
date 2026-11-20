@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-## Editor entry point for dot-friends. Registers inspector types only.
+## Editor entry point for GameSpice Friends. Registers inspector types only.
 ##
 ## No autoloads: the suite has four people in one process, each with their own client, and
 ## a global would make them one person.

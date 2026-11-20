@@ -6,7 +6,7 @@ Part of the [**GameSpice**](https://gamespice.net) collection: modular, MIT-lice
 
 ## Install
 
-Copy `addons/dot_friends/` and [dot-core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-friends in **Project > Project Settings > Plugins**. dot-core is the only dependency. dot-auth, dot-party and your connect code are reached through callables and never named.
+Copy `addons/dot_friends/` and [GameSpice Core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-friends in **Project > Project Settings > Plugins**. dot-core is the only dependency. dot-auth, dot-party and your connect code are reached through callables and never named.
 
 ## Use
 

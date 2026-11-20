@@ -9,11 +9,11 @@ extends DotFriendsBackend
 ## [code]code[/code] and lands in [member DotError.detail], where the local backend puts
 ## its own. The routes are in [code]docs/backbone-contract.md[/code].
 ##
-## [b]Neither dot-auth nor its client is named.[/b] Give it [member client] — any object
+## [b]Neither GameSpice Auth nor its client is named.[/b] Give it [member client] — any object
 ## with [code]post_app(path, body)[/code] and [code]get_app(path, query)[/code], which is
-## dot-auth's [code]DotAuthClient[/code] — and the token, its refresh and the envelope are
+## GameSpice Auth's [code]DotAuthClient[/code] — and the token, its refresh and the envelope are
 ## handled there, once, for every addon that speaks the app API. [member token_fn] with a
-## [DotHttp] is the fallback for a game without dot-auth, and [member request_fn] replaces
+## [DotHttp] is the fallback for a game without GameSpice Auth, and [member request_fn] replaces
 ## the transport entirely, which is how the suite drives it.
 
 const CHANNEL := "friends.app"
@@ -141,7 +141,7 @@ func describe() -> String:
 ## [b]A site with no friends routes is ONE INFO line, and nothing more.[/b] It is not an
 ## outage — it is the site as deployed today, and nothing anybody can fix from here — so a
 ## WARN for it was a warning on every sign-in against every site without the routes, and a
-## caller that switches friends off for the session (dot-server-deploy's shell does, on the
+## caller that switches friends off for the session (GameSpice Server Deploy's shell does, on the
 ## first bare 404) logged its own line after it: two lines for one fact.
 func _call(method: String, path: String, body: Dictionary = {}, query: Dictionary = {}) -> DotResult:
 	var res := await _call_inner(method, path, body, query)
@@ -208,7 +208,7 @@ func _call_inner(method: String, path: String, body: Dictionary = {}, query: Dic
 			return _refusal(env, 0)
 		return DotResult.success(env.get("data"))
 
-	# Through dot-auth: the envelope is already unwrapped, and a refusal's site code is
+	# Through GameSpice Auth: the envelope is already unwrapped, and a refusal's site code is
 	# already in the error's detail.
 	var res: DotResult = null
 	if method == "GET":

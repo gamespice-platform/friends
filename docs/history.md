@@ -16,7 +16,7 @@ The site's friend procedures threw English messages, not keys, so the hub's refu
 
 ## A wrapped 404 put text where a key belongs
 
-Read in dot-party's app backend, not found by running: its 404 hint wrapped the result, so `error.detail` became `"[invalid] Not found."`, and a caller treating `detail` as an i18n key looked that up. dot-friends clears `detail` and the suite checks a bare 404 "invents no key"; dot-party has since stopped wrapping too.
+Read in GameSpice Party's app backend, not found by running: its 404 hint wrapped the result, so `error.detail` became `"[invalid] Not found."`, and a caller treating `detail` as an i18n key looked that up. GameSpice Friends clears `detail` and the suite checks a bare 404 "invents no key"; GameSpice Party has since stopped wrapping too.
 
 ## A missing route logged a warning nobody could act on
 
