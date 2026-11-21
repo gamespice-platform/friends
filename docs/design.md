@@ -8,17 +8,17 @@ website-city has had friends for a long time (`UserFriendship`, one row per pair
 
 ## The request rules are the site's, read rather than guessed
 
-`DotFriendsLocalHub` follows the site's friend router: asking somebody who already asked you **accepts** them ("what the user obviously means"); only the declined sender waits seven days, and the one who declined may always ask; a re-request re-uses the row, turned round to face the new asker; only the addressee may answer, and everything else is "not found" rather than "not yours", so a requester cannot decline their own request into a cooldown against the person they asked; removing deletes the row; a sender may withdraw a pending request (`cancel_request`), leaving no cooldown. Request ids are the site's integers (`UserFriendship.id`), so `DotFriendRequest.id` is an `int` and goes back as `requestId` unchanged.
+`GSFriendsLocalHub` follows the site's friend router: asking somebody who already asked you **accepts** them ("what the user obviously means"); only the declined sender waits seven days, and the one who declined may always ask; a re-request re-uses the row, turned round to face the new asker; only the addressee may answer, and everything else is "not found" rather than "not yours", so a requester cannot decline their own request into a cooldown against the person they asked; removing deletes the row; a sender may withdraw a pending request (`cancel_request`), leaving no cooldown. Request ids are the site's integers (`UserFriendship.id`), so `GSFriendRequest.id` is an `int` and goes back as `requestId` unchanged.
 
 It is a copy for the reason GameSpice Party's local hub is: a LAN with no website still has to answer these questions, and a game developed against one set of rules must not meet a different set on launch day.
 
 ## Offline is a blank
 
-An expired presence, an explicit "offline" post and a member who hides their activity all read the same: every field null, not joinable, no timestamp. The alternative ("offline, last on server 12") is a hidden player whose server is shown to everybody. `DotPresence.has_destination()` is false for all three, so nothing downstream can follow one.
+An expired presence, an explicit "offline" post and a member who hides their activity all read the same: every field null, not joinable, no timestamp. The alternative ("offline, last on server 12") is a hidden player whose server is shown to everybody. `GSPresence.has_destination()` is false for all three, so nothing downstream can follow one.
 
 ## Presence is posted on a heartbeat and on an edge
 
-45 s against the site's 120 s leaves room for two lost posts; `DotFriendsConfig.validate()` refuses a heartbeat over half the lifetime, and the client shortens the heartbeat to 40% of any shorter `ttlSec` the site answers with.
+45 s against the site's 120 s leaves room for two lost posts; `GSFriendsConfig.validate()` refuses a heartbeat over half the lifetime, and the client shortens the heartbeat to 40% of any shorter `ttlSec` the site answers with.
 
 A change waits `presence_debounce_sec` counted from the **first** change of a burst, so joining a server (server, then party, then joinable) is one post, and a stream of changes cannot postpone the post forever. A burst that ends where it started posts nothing. `go_offline()` posts at once and stops the heartbeat, because a game that just quits leaves its friends a two-minute window to try to join a player who is gone.
 
@@ -40,7 +40,7 @@ The list is polled every 30 s. `join()` spends one `GET presence` on the one fri
 
 ## Refusals carry keys, and `detail` stays a key
 
-The site's app routes send refusal keys from its `locales/en/friends.json`; the hub uses the same ones, and the `friends.join.deny.*` keys are this addon's own, for `join()`. `DotResult.wrap` puts the cause in `detail`, which is where a refusal key lives, so the app backend's 404 handling clears `detail` rather than wrapping: a caller that treats `detail` as an i18n key must never be handed `"[invalid] Not found."`.
+The site's app routes send refusal keys from its `locales/en/friends.json`; the hub uses the same ones, and the `friends.join.deny.*` keys are this addon's own, for `join()`. `GSResult.wrap` puts the cause in `detail`, which is where a refusal key lives, so the app backend's 404 handling clears `detail` rather than wrapping: a caller that treats `detail` as an i18n key must never be handed `"[invalid] Not found."`.
 
 ## A site without the routes is one INFO line
 
@@ -55,5 +55,5 @@ A bare 404 is a site that does not serve the routes, not an outage. `_call` says
 - **The site's routes.** website-city is its own repository; they are documented in its `docs/api/app-social.md`. Deployment is the operator's.
 - **Blocking, friend search and suggestions.** The site has all three behind tRPC; none is in the app contract yet. A game that needs one adds a route to the contract first.
 - **A friends UI.** GameSpice UI draws; this emits.
-- **Push.** The site pushes nothing to a game, so this polls. A socket would replace the poll in `DotFriendsClient` and nothing else.
+- **Push.** The site pushes nothing to a game, so this polls. A socket would replace the poll in `GSFriendsClient` and nothing else.
 - **Turning a server id into an address.** A presence carries the site's server id; `connect_fn` is the game's, usually through GameSpice Browser or the site's connect route.

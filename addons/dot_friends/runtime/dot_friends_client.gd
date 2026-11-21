@@ -1,20 +1,20 @@
-class_name DotFriendsClient
+class_name GSFriendsClient
 extends Node
 
 ## The player's friends list kept current, their own presence kept posted, and the thing
 ## that takes them to where a friend is playing.
 ##
 ## [b]Polled, because the backbone pushes nothing.[/b] The list is polled at a relaxed rate
-## ([member DotFriendsConfig.poll_sec], 30 s): every signed-in player of every game polls it,
+## ([member GSFriendsConfig.poll_sec], 30 s): every signed-in player of every game polls it,
 ## and a friend shown online half a minute late costs nobody anything. [method join] does
 ## not trust that snapshot — it asks for the one friend's presence first, because the party
 ## it names may have gone in those thirty seconds.
 ##
 ## [b]Presence is a heartbeat and an edge.[/b] The site forgets a presence about 120 seconds
-## after the last post, so this posts every [member DotFriendsConfig.heartbeat_sec] (45 s)
+## after the last post, so this posts every [member GSFriendsConfig.heartbeat_sec] (45 s)
 ## while nothing changes — and shortens that if the site answers with a shorter
 ## [code]ttlSec[/code]. A change (status, server, party, joinable, detail) is posted after
-## [member DotFriendsConfig.presence_debounce_sec], counted from the first change of a
+## [member GSFriendsConfig.presence_debounce_sec], counted from the first change of a
 ## burst: joining a server sets the server, then the party, then joinable, and three posts
 ## for one event is two posts the site rate-limits somebody else for. A burst that ends
 ## where it started posts nothing.
@@ -36,44 +36,44 @@ const CHANNEL := "friends.client"
 ## Every snapshot, after the per-friend signals.
 signal friends_changed(friends: Array)
 ## Somebody became a friend since the last snapshot — either side accepting.
-signal friend_added(friend: DotFriend)
-signal friend_removed(friend: DotFriend)
+signal friend_added(friend: GSFriend)
+signal friend_removed(friend: GSFriend)
 ## Offline to any other status. Also fires [signal friend_presence_changed].
-signal friend_online(friend: DotFriend)
+signal friend_online(friend: GSFriend)
 ## Any status to offline — including expiry, and hiding their activity.
-signal friend_offline(friend: DotFriend)
+signal friend_offline(friend: GSFriend)
 ## Anything a person would see changed. Not the timestamp, which moves on every heartbeat.
-signal friend_presence_changed(friend: DotFriend, old: DotPresence)
+signal friend_presence_changed(friend: GSFriend, old: GSPresence)
 ## A pending request this client has not seen before.
-signal request_received(request: DotFriendRequest)
+signal request_received(request: GSFriendRequest)
 signal requests_changed(incoming: Array, outgoing: Array)
 ## The site accepted a presence post and will keep it this long.
 signal presence_posted(ttl_sec: int)
 ## A request to the backbone failed. The snapshot is unchanged.
-signal request_failed(what: String, error: DotError)
+signal request_failed(what: String, error: GSError)
 
-@export var config: DotFriendsConfig = null
+@export var config: GSFriendsConfig = null
 
-var backend: DotFriendsBackend = null
+var backend: GSFriendsBackend = null
 
-## [code]func(party_id: String, friend: DotFriend) -> DotResult[/code], awaited. The game's
+## [code]func(party_id: String, friend: GSFriend) -> GSResult[/code], awaited. The game's
 ## "join this party". GameSpice Party's client fits in one lambda:
 ## [code]func(pid, _f): return await party.join(pid)[/code].
 var join_party_fn: Callable = Callable()
 
-## [code]func(server_id: int, friend: DotFriend) -> DotResult[/code], awaited. The game's
+## [code]func(server_id: int, friend: GSFriend) -> GSResult[/code], awaited. The game's
 ## "connect to this server"; the site's server id is all a presence carries, so turning it
 ## into an address is the game's (usually through GameSpice Browser or the site's connect route).
 var connect_fn: Callable = Callable()
 
 ## The current list. Empty until the first successful poll; [member loaded] says which.
-var friends: Array[DotFriend] = []
-var incoming: Array[DotFriendRequest] = []
-var outgoing: Array[DotFriendRequest] = []
+var friends: Array[GSFriend] = []
+var incoming: Array[GSFriendRequest] = []
+var outgoing: Array[GSFriendRequest] = []
 var loaded: bool = false
 
 # This player's own presence. Set through the setters, which post it.
-var status: DotPresence.Status = DotPresence.Status.ONLINE
+var status: GSPresence.Status = GSPresence.Status.ONLINE
 var server_id: int = 0
 var party_id: String = ""
 var joinable: bool = false
@@ -92,7 +92,7 @@ var _posting: bool = false
 signal _post_finished
 var _posted_once: bool = false
 var _last_posted: Dictionary = {}
-var _ttl_sec: float = DotFriendsConfig.PRESENCE_TTL_SEC
+var _ttl_sec: float = GSFriendsConfig.PRESENCE_TTL_SEC
 var _refreshing: bool = false
 var _refreshing_requests: bool = false
 ## request id -> true, for requests already announced.
@@ -101,7 +101,7 @@ var _seen_requests: Dictionary = {}
 
 func _ready() -> void:
 	if config == null:
-		config = DotFriendsConfig.new()
+		config = GSFriendsConfig.new()
 	# The first presence goes out on the first advance past the debounce, carrying whatever
 	# the game set before then rather than a bare "online" followed at once by the real one.
 	_mark_dirty()
@@ -118,7 +118,7 @@ func _process(delta: float) -> void:
 ## processing off.
 func advance(delta: float) -> void:
 	if config == null:
-		config = DotFriendsConfig.new()
+		config = GSFriendsConfig.new()
 	_clock += delta
 	_since_poll += delta
 	_since_requests += delta
@@ -129,7 +129,7 @@ func advance(delta: float) -> void:
 	if not _posting:
 		if _dirty and _clock - _dirty_at >= config.presence_debounce_sec:
 			_post_presence()
-		elif _posted_once and status != DotPresence.Status.OFFLINE and _since_post >= heartbeat_interval():
+		elif _posted_once and status != GSPresence.Status.OFFLINE and _since_post >= heartbeat_interval():
 			_post_presence()
 
 	if _since_poll >= config.poll_sec:
@@ -151,7 +151,7 @@ func heartbeat_interval() -> float:
 
 # --- This player's presence --------------------------------------------------
 
-func set_status(value: DotPresence.Status) -> void:
+func set_status(value: GSPresence.Status) -> void:
 	status = value
 	_mark_dirty()
 
@@ -175,19 +175,19 @@ func set_joinable(value: bool) -> void:
 
 ## Refused rather than truncated when too long: a cut sentence reads as a bug in the game,
 ## and the caller is the one who can shorten it well.
-func set_detail(value: String) -> DotResult:
-	if value.length() > DotPresence.DETAIL_MAX:
-		return DotResult.fail(DotError.CODE_INVALID, "That presence line is too long.", "presence.deny.detail")
+func set_detail(value: String) -> GSResult:
+	if value.length() > GSPresence.DETAIL_MAX:
+		return GSResult.fail(GSError.CODE_INVALID, "That presence line is too long.", "presence.deny.detail")
 	detail = value
 	_mark_dirty()
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## The body [code]POST presence[/code] is sent. Each post replaces the whole presence, so
 ## a field is left out to clear it.
 func presence_body() -> Dictionary:
-	var body := {"status": DotPresence.status_name(status)}
-	if status == DotPresence.Status.OFFLINE:
+	var body := {"status": GSPresence.status_name(status)}
+	if status == GSPresence.Status.OFFLINE:
 		return body
 	body["joinable"] = joinable
 	if server_id > 0:
@@ -200,7 +200,7 @@ func presence_body() -> Dictionary:
 
 
 ## Posts now, skipping the debounce. For a game about to quit, with [method go_offline].
-func post_presence_now() -> DotResult:
+func post_presence_now() -> GSResult:
 	return await _post_presence()
 
 
@@ -210,8 +210,8 @@ func post_presence_now() -> DotResult:
 ## A post already in flight is waited for first. Sent alongside it, the two requests race
 ## and the older "online" can land second, leaving the player online for a full lifetime
 ## after they closed the game.
-func go_offline() -> DotResult:
-	status = DotPresence.Status.OFFLINE
+func go_offline() -> GSResult:
+	status = GSPresence.Status.OFFLINE
 	if _posting:
 		await _post_finished
 	return await _post_presence()
@@ -219,7 +219,7 @@ func go_offline() -> DotResult:
 
 func _mark_dirty() -> void:
 	# A burst that ends where it started is nothing to say.
-	if _posted_once and DotValue.same_dictionary(presence_body(), _last_posted):
+	if _posted_once and GSValue.same_dictionary(presence_body(), _last_posted):
 		_dirty = false
 		return
 	if not _dirty:
@@ -227,15 +227,15 @@ func _mark_dirty() -> void:
 		_dirty_at = _clock
 
 
-func _post_presence() -> DotResult:
+func _post_presence() -> GSResult:
 	if backend == null:
-		return DotResult.fail(DotError.CODE_STATE, "no friends backend")
+		return GSResult.fail(GSError.CODE_STATE, "no friends backend")
 	_posting = true
 	# Cleared before the await, so a change made while this post is in flight marks the
 	# presence dirty again rather than being lost behind it.
 	_dirty = false
 	var body := presence_body()
-	var res: DotResult = await backend.post_presence(body)
+	var res: GSResult = await backend.post_presence(body)
 	_posting = false
 	_since_post = 0.0
 	_post_finished.emit()
@@ -249,7 +249,7 @@ func _post_presence() -> DotResult:
 		ttl = int((res.value as Dictionary).get("ttlSec", 0))
 	if ttl > 0:
 		_ttl_sec = float(ttl)
-	DotLog.trace(CHANNEL, "presence posted", {"status": body["status"], "ttl": ttl})
+	GSLog.trace(CHANNEL, "presence posted", {"status": body["status"], "ttl": ttl})
 	presence_posted.emit(ttl)
 	return res
 
@@ -258,24 +258,24 @@ func _post_presence() -> DotResult:
 
 ## Fetches the friends list and applies it. Overlapping calls are dropped rather than
 ## queued, because the second answer would only repeat the first.
-func refresh() -> DotResult:
+func refresh() -> GSResult:
 	if backend == null or _refreshing:
-		return DotResult.success(friends)
+		return GSResult.success(friends)
 	_refreshing = true
-	var res: DotResult = await backend.friends()
+	var res: GSResult = await backend.friends()
 	_refreshing = false
 	if not res.ok:
 		request_failed.emit("friends", res.error)
 		return res
 	apply_friends(res.value as Array)
-	return DotResult.success(friends)
+	return GSResult.success(friends)
 
 
-func refresh_requests() -> DotResult:
+func refresh_requests() -> GSResult:
 	if backend == null or _refreshing_requests:
-		return DotResult.success(null)
+		return GSResult.success(null)
 	_refreshing_requests = true
-	var res: DotResult = await backend.requests()
+	var res: GSResult = await backend.requests()
 	_refreshing_requests = false
 	if not res.ok:
 		request_failed.emit("requests", res.error)
@@ -291,12 +291,12 @@ func apply_friends(next: Array) -> void:
 	var before := {}
 	for f in friends:
 		before[f.user_id] = f
-	var list: Array[DotFriend] = []
+	var list: Array[GSFriend] = []
 	var after := {}
 	for v in next:
-		if v is DotFriend and not after.has((v as DotFriend).user_id):
+		if v is GSFriend and not after.has((v as GSFriend).user_id):
 			list.append(v)
-			after[(v as DotFriend).user_id] = v
+			after[(v as GSFriend).user_id] = v
 
 	var first := not loaded
 	var old_list := friends
@@ -309,7 +309,7 @@ func apply_friends(next: Array) -> void:
 				# Not also "online": a friend just added is news once, not twice.
 				friend_added.emit(f)
 				continue
-			_announce_presence(f, (before[f.user_id] as DotFriend).presence)
+			_announce_presence(f, (before[f.user_id] as GSFriend).presence)
 		for f in old_list:
 			if not after.has(f.user_id):
 				friend_removed.emit(f)
@@ -331,7 +331,7 @@ func apply_requests(lists: Dictionary) -> void:
 	requests_changed.emit(incoming, outgoing)
 
 
-func _announce_presence(f: DotFriend, old: DotPresence) -> void:
+func _announce_presence(f: GSFriend, old: GSPresence) -> void:
 	if old.same_as(f.presence):
 		return
 	if not old.is_online() and f.is_online():
@@ -341,15 +341,15 @@ func _announce_presence(f: DotFriend, old: DotPresence) -> void:
 	friend_presence_changed.emit(f, old)
 
 
-func find_friend(user_id: String) -> DotFriend:
+func find_friend(user_id: String) -> GSFriend:
 	for f in friends:
 		if f.user_id == user_id:
 			return f
 	return null
 
 
-func online_friends() -> Array[DotFriend]:
-	var out: Array[DotFriend] = []
+func online_friends() -> Array[GSFriend]:
+	var out: Array[GSFriend] = []
 	for f in friends:
 		if f.is_online():
 			out.append(f)
@@ -358,9 +358,9 @@ func online_friends() -> Array[DotFriend]:
 
 ## Asks for the presence of [param user_ids] (default: every friend) and applies it, 100 at
 ## a time, which is the site's limit per request.
-func refresh_presence(user_ids: PackedStringArray = PackedStringArray()) -> DotResult:
+func refresh_presence(user_ids: PackedStringArray = PackedStringArray()) -> GSResult:
 	if backend == null:
-		return DotResult.fail(DotError.CODE_STATE, "no friends backend")
+		return GSResult.fail(GSError.CODE_STATE, "no friends backend")
 	var ids := user_ids
 	if ids.is_empty():
 		for f in friends:
@@ -368,9 +368,9 @@ func refresh_presence(user_ids: PackedStringArray = PackedStringArray()) -> DotR
 	var merged := {}
 	var at := 0
 	while at < ids.size():
-		var batch := ids.slice(at, at + DotFriendsBackendApp.PRESENCE_BATCH_MAX)
+		var batch := ids.slice(at, at + GSFriendsBackendApp.PRESENCE_BATCH_MAX)
 		at += batch.size()
-		var res: DotResult = await backend.fetch_presence(batch)
+		var res: GSResult = await backend.fetch_presence(batch)
 		if not res.ok:
 			request_failed.emit("presence", res.error)
 			return res
@@ -382,7 +382,7 @@ func refresh_presence(user_ids: PackedStringArray = PackedStringArray()) -> DotR
 		var old := f.presence
 		f.presence = merged[uid]
 		_announce_presence(f, old)
-	return DotResult.success(merged)
+	return GSResult.success(merged)
 
 
 # --- Actions -----------------------------------------------------------------
@@ -390,24 +390,24 @@ func refresh_presence(user_ids: PackedStringArray = PackedStringArray()) -> DotR
 # Each asks the backend and then refreshes, so the list and its signals come from what the
 # backbone now says rather than from what this client assumed it would say.
 
-func send_request(user_id: String) -> DotResult:
+func send_request(user_id: String) -> GSResult:
 	return await _act("send_request", &"send_request", [user_id])
 
 
-func accept(request_id: int) -> DotResult:
+func accept(request_id: int) -> GSResult:
 	return await _act("accept", &"respond", [request_id, true])
 
 
-func decline(request_id: int) -> DotResult:
+func decline(request_id: int) -> GSResult:
 	return await _act("decline", &"respond", [request_id, false])
 
 
 ## Withdraws a request this player sent (one of [code]outgoing[/code]'s ids).
-func cancel_request(request_id: int) -> DotResult:
+func cancel_request(request_id: int) -> GSResult:
 	return await _act("cancel_request", &"cancel_request", [request_id])
 
 
-func remove_friend(user_id: String) -> DotResult:
+func remove_friend(user_id: String) -> GSResult:
 	return await _act("remove_friend", &"remove_friend", [user_id])
 
 
@@ -415,7 +415,7 @@ func remove_friend(user_id: String) -> DotResult:
 ## game can join parties, otherwise to their server. Value: [code]{via: "party"|"server",
 ## partyId|serverId}[/code].
 ##
-## Refuses, with a key in [member DotError.detail], when they are not a friend
+## Refuses, with a key in [member GSError.detail], when they are not a friend
 ## ([code]friends.join.deny.notFriend[/code]), are offline ([code].offline[/code]), have not
 ## made themselves joinable or are somewhere nothing can follow ([code].notJoinable[/code]),
 ## or when this game can reach neither their party nor their server ([code].unsupported[/code]).
@@ -423,69 +423,69 @@ func remove_friend(user_id: String) -> DotResult:
 ## A party that refuses — full, say — falls back to the server when there is one, because
 ## what the player asked for is to be where their friend is. The party's refusal is kept in
 ## the value as [code]partyRefused[/code] so a game can say why it went the long way round.
-func join(friend_user_id: String) -> DotResult:
+func join(friend_user_id: String) -> GSResult:
 	var f := find_friend(friend_user_id)
 	if f == null:
-		return _refuse(DotError.CODE_INVALID, "That person is not on your friends list.", "friends.join.deny.notFriend")
+		return _refuse(GSError.CODE_INVALID, "That person is not on your friends list.", "friends.join.deny.notFriend")
 
 	# The list can be thirty seconds old. One cheap request for one person is worth it
 	# against sending somebody to a party that ended while they read the list.
 	if backend != null:
-		var fresh: DotResult = await backend.fetch_presence(PackedStringArray([friend_user_id]))
+		var fresh: GSResult = await backend.fetch_presence(PackedStringArray([friend_user_id]))
 		if fresh.ok and fresh.value is Dictionary:
 			var map: Dictionary = fresh.value
 			if not map.has(friend_user_id):
-				return _refuse(DotError.CODE_INVALID, "That person is no longer your friend.", "friends.join.deny.notFriend")
+				return _refuse(GSError.CODE_INVALID, "That person is no longer your friend.", "friends.join.deny.notFriend")
 			var old := f.presence
 			f.presence = map[friend_user_id]
 			_announce_presence(f, old)
 		elif not fresh.ok:
-			DotLog.debug(CHANNEL, "could not refresh a friend's presence before joining; using the list", {
+			GSLog.debug(CHANNEL, "could not refresh a friend's presence before joining; using the list", {
 				"friend": friend_user_id, "error": str(fresh.error),
 			})
 
 	var p := f.presence
 	if not p.is_online():
-		return _refuse(DotError.CODE_STATE, "%s is offline." % f.display_name, "friends.join.deny.offline")
+		return _refuse(GSError.CODE_STATE, "%s is offline." % f.display_name, "friends.join.deny.offline")
 	if not p.joinable or not p.has_destination():
-		return _refuse(DotError.CODE_FORBIDDEN, "%s cannot be joined right now." % f.display_name, "friends.join.deny.notJoinable")
+		return _refuse(GSError.CODE_FORBIDDEN, "%s cannot be joined right now." % f.display_name, "friends.join.deny.notJoinable")
 
-	var party_error: DotError = null
+	var party_error: GSError = null
 	if p.party_id != "" and join_party_fn.is_valid():
 		var joined: Variant = await join_party_fn.call(p.party_id, f)
-		# Anything but a DotResult is the game's callback breaking the contract (a lambda
+		# Anything but a GSResult is the game's callback breaking the contract (a lambda
 		# that returns nothing, a bool). Counting that as success reported a join that may
 		# never have happened and skipped the server fallback; it is an error instead.
-		if not (joined is DotResult):
-			party_error = DotError.make(
-				DotError.CODE_INVALID, "join_party_fn must return a DotResult.",
+		if not (joined is GSResult):
+			party_error = GSError.make(
+				GSError.CODE_INVALID, "join_party_fn must return a GSResult.",
 				"friends.join.badPartyFn"
 			)
-			DotLog.warn(CHANNEL, "join_party_fn did not return a DotResult", {"friend": f.user_id})
-		elif (joined as DotResult).ok:
-			DotLog.info(CHANNEL, "joined a friend's party", {"friend": f.user_id, "party": p.party_id})
-			return DotResult.success({"via": "party", "partyId": p.party_id})
+			GSLog.warn(CHANNEL, "join_party_fn did not return a GSResult", {"friend": f.user_id})
+		elif (joined as GSResult).ok:
+			GSLog.info(CHANNEL, "joined a friend's party", {"friend": f.user_id, "party": p.party_id})
+			return GSResult.success({"via": "party", "partyId": p.party_id})
 		else:
-			party_error = (joined as DotResult).error
+			party_error = (joined as GSResult).error
 
 	if p.server_id > 0 and connect_fn.is_valid():
 		var connected: Variant = await connect_fn.call(p.server_id, f)
-		if connected is DotResult and not (connected as DotResult).ok:
+		if connected is GSResult and not (connected as GSResult).ok:
 			# Both ways refused: the connect's error, still carrying why the party said no.
 			# Returning only the connect's error lost the reason the long way was taken.
-			var failed := connected as DotResult
+			var failed := connected as GSResult
 			if party_error != null and failed.error != null:
 				failed.error.context["partyRefused"] = party_error
 			return failed
-		DotLog.info(CHANNEL, "followed a friend to their server", {"friend": f.user_id, "server": p.server_id})
+		GSLog.info(CHANNEL, "followed a friend to their server", {"friend": f.user_id, "server": p.server_id})
 		var value := {"via": "server", "serverId": p.server_id}
 		if party_error != null:
 			value["partyRefused"] = party_error
-		return DotResult.success(value)
+		return GSResult.success(value)
 
 	if party_error != null:
-		return DotResult.failure(party_error)
-	return _refuse(DotError.CODE_UNSUPPORTED, "This game cannot follow %s there." % f.display_name, "friends.join.deny.unsupported")
+		return GSResult.failure(party_error)
+	return _refuse(GSError.CODE_UNSUPPORTED, "This game cannot follow %s there." % f.display_name, "friends.join.deny.unsupported")
 
 
 func describe_lines() -> PackedStringArray:
@@ -505,18 +505,18 @@ func describe_lines() -> PackedStringArray:
 
 ## The backend method by name rather than a bound Callable, because binding reads
 ## [member backend] first and a client with none would fail there instead of refusing.
-func _act(what: String, method: StringName, args: Array) -> DotResult:
+func _act(what: String, method: StringName, args: Array) -> GSResult:
 	if backend == null:
-		return DotResult.fail(DotError.CODE_STATE, "no friends backend")
+		return GSResult.fail(GSError.CODE_STATE, "no friends backend")
 	var res: Variant = await backend.callv(method, args)
-	if res is DotResult and not (res as DotResult).ok:
-		request_failed.emit(what, (res as DotResult).error)
+	if res is GSResult and not (res as GSResult).ok:
+		request_failed.emit(what, (res as GSResult).error)
 		return res
 	await refresh()
 	await refresh_requests()
-	return res if res is DotResult else DotResult.success(res)
+	return res if res is GSResult else GSResult.success(res)
 
 
-func _refuse(code: String, message: String, key: String) -> DotResult:
-	DotLog.debug(CHANNEL, "join refused", {"reason": key})
-	return DotResult.fail(code, message, key)
+func _refuse(code: String, message: String, key: String) -> GSResult:
+	GSLog.debug(CHANNEL, "join refused", {"reason": key})
+	return GSResult.fail(code, message, key)

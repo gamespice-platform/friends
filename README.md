@@ -11,18 +11,18 @@ Copy `addons/dot_friends/` and [GameSpice Core](https://github.com/gamespice-pla
 ## Use
 
 ```gdscript
-var friends := DotFriendsClient.new()
-var app := DotFriendsBackendApp.new()
-app.client = auth          # dot-auth's DotAuthClient: it holds the token and refreshes it
+var friends := GSFriendsClient.new()
+var app := GSFriendsBackendApp.new()
+app.client = auth          # dot-auth's GSAuthClient: it holds the token and refreshes it
 friends.backend = app
-friends.join_party_fn = func(party_id: String, _friend: DotFriend) -> DotResult:
-    return await party.join(party_id)          # a DotPartyClient, if the game has parties
-friends.connect_fn = func(server_id: int, _friend: DotFriend) -> DotResult:
+friends.join_party_fn = func(party_id: String, _friend: GSFriend) -> GSResult:
+    return await party.join(party_id)          # a GSPartyClient, if the game has parties
+friends.connect_fn = func(server_id: int, _friend: GSFriend) -> GSResult:
     return await game.connect_to_server(server_id)
 add_child(friends)
 
-friends.friend_online.connect(func(f: DotFriend): hud.toast("%s is online" % f.display_name))
-friends.request_received.connect(func(r: DotFriendRequest): hud.toast("%s wants to be friends" % r.display_name))
+friends.friend_online.connect(func(f: GSFriend): hud.toast("%s is online" % f.display_name))
+friends.request_received.connect(func(r: GSFriendRequest): hud.toast("%s wants to be friends" % r.display_name))
 party.joined_party.connect(func(p): friends.set_party(p.id))
 ```
 
@@ -32,12 +32,12 @@ The website owns the friends list: requests, answers and unfriending all happen 
 
 | Backend | What it is |
 | --- | --- |
-| `DotFriendsBackendApp` | The website, as the signed-in player. |
-| `DotFriendsBackendLocal` | The website's rules run in-process, for a LAN, an offline build and the tests. |
+| `GSFriendsBackendApp` | The website, as the signed-in player. |
+| `GSFriendsBackendLocal` | The website's rules run in-process, for a LAN, an offline build and the tests. |
 
-A refusal carries a reason key such as `friends.request.deny.pending` in `DotError.detail`, so a game can show its own text.
+A refusal carries a reason key such as `friends.request.deny.pending` in `GSError.detail`, so a game can show its own text.
 
-**Presence** is what friends see: offline, online, in game or away, which game, server and party, whether the player can be joined, and one line of text your game writes. `DotFriendsClient` posts it on a heartbeat (well inside the two minutes the website keeps it) and straight away on a change. A burst of changes goes out as one post. Call `go_offline()` when the player quits. A player who hides their activity on the website shows as offline to everyone.
+**Presence** is what friends see: offline, online, in game or away, which game, server and party, whether the player can be joined, and one line of text your game writes. `GSFriendsClient` posts it on a heartbeat (well inside the two minutes the website keeps it) and straight away on a change. A burst of changes goes out as one post. Call `go_offline()` when the player quits. A player who hides their activity on the website shows as offline to everyone.
 
 **Joining.** `join(friend_user_id)` re-checks the friend's presence, then joins their party if it is joinable and the game can join parties, otherwise connects to their server if the game can, otherwise refuses with a reason (not a friend, offline, not joinable, or somewhere this game cannot follow).
 

@@ -1,19 +1,19 @@
-class_name DotFriendsBackendApp
-extends DotFriendsBackend
+class_name GSFriendsBackendApp
+extends GSFriendsBackend
 
 ## website-city, as the signed-in player.
 ##
 ## [b]The app API's envelope, not the integration API's.[/b] [code]{ok: true, data}[/code]
 ## on success and [code]{ok: false, code, message, retryAfter?}[/code] on failure, as
 ## [code]src/types/app-api/contract.ts[/code] defines it. The site's refusal key arrives as
-## [code]code[/code] and lands in [member DotError.detail], where the local backend puts
+## [code]code[/code] and lands in [member GSError.detail], where the local backend puts
 ## its own. The routes are in [code]docs/backbone-contract.md[/code].
 ##
 ## [b]Neither GameSpice Auth nor its client is named.[/b] Give it [member client] — any object
 ## with [code]post_app(path, body)[/code] and [code]get_app(path, query)[/code], which is
-## GameSpice Auth's [code]DotAuthClient[/code] — and the token, its refresh and the envelope are
+## GameSpice Auth's [code]GSAuthClient[/code] — and the token, its refresh and the envelope are
 ## handled there, once, for every addon that speaks the app API. [member token_fn] with a
-## [DotHttp] is the fallback for a game without GameSpice Auth, and [member request_fn] replaces
+## [GSHttp] is the fallback for a game without GameSpice Auth, and [member request_fn] replaces
 ## the transport entirely, which is how the suite drives it.
 
 const CHANNEL := "friends.app"
@@ -34,10 +34,10 @@ var api_base: String = ""
 var token_fn: Callable = Callable()
 
 ## Does the requests. Needs to be in the tree; a game adds it once.
-var http: DotHttp = null
+var http: GSHttp = null
 
-## [code]func(method: String, path: String, body: Dictionary) -> DotResult[/code] answering
-## with the raw envelope (or a failed [DotResult] from [method DotError.from_http]),
+## [code]func(method: String, path: String, body: Dictionary) -> GSResult[/code] answering
+## with the raw envelope (or a failed [GSResult] from [method GSError.from_http]),
 ## replacing the HTTP call entirely. The suite uses it; so can a game with its own transport.
 var request_fn: Callable = Callable()
 
@@ -52,70 +52,70 @@ var _no_routes: bool = false
 
 ## Codes the site uses to say no. Those are the rules working and are not the service failing.
 const _REFUSALS := [
-	DotError.CODE_CONFLICT, DotError.CODE_AUTH, DotError.CODE_RATE_LIMITED,
-	DotError.CODE_INVALID, DotError.CODE_FORBIDDEN,
+	GSError.CODE_CONFLICT, GSError.CODE_AUTH, GSError.CODE_RATE_LIMITED,
+	GSError.CODE_INVALID, GSError.CODE_FORBIDDEN,
 ]
 
 
-func _init(p_api_base: String = "", p_http: DotHttp = null, p_token_fn: Callable = Callable()) -> void:
+func _init(p_api_base: String = "", p_http: GSHttp = null, p_token_fn: Callable = Callable()) -> void:
 	api_base = p_api_base
 	http = p_http
 	token_fn = p_token_fn
 
 
-func friends() -> DotResult:
+func friends() -> GSResult:
 	var res := await _call("GET", "friends")
 	if not res.ok:
 		return res
-	return DotFriend.list_from(res.value)
+	return GSFriend.list_from(res.value)
 
 
-func requests() -> DotResult:
+func requests() -> GSResult:
 	var res := await _call("GET", "friends/requests")
 	if not res.ok:
 		return res
-	return DotFriendRequest.lists_from(res.value)
+	return GSFriendRequest.lists_from(res.value)
 
 
-func send_request(user_id: String) -> DotResult:
+func send_request(user_id: String) -> GSResult:
 	if user_id == "":
-		return DotResult.fail(DotError.CODE_INVALID, "Nobody to send a request to.", "friends.request.deny.notFound")
+		return GSResult.fail(GSError.CODE_INVALID, "Nobody to send a request to.", "friends.request.deny.notFound")
 	return await _call("POST", "friends/request", {"userId": user_id})
 
 
-func respond(request_id: int, accept: bool) -> DotResult:
+func respond(request_id: int, accept: bool) -> GSResult:
 	return await _call("POST", "friends/respond", {"requestId": request_id, "accept": accept})
 
 
-func cancel_request(request_id: int) -> DotResult:
+func cancel_request(request_id: int) -> GSResult:
 	return await _call("POST", "friends/cancel", {"requestId": request_id})
 
 
-func remove_friend(user_id: String) -> DotResult:
+func remove_friend(user_id: String) -> GSResult:
 	return await _call("POST", "friends/remove", {"userId": user_id})
 
 
-func post_presence(body: Dictionary) -> DotResult:
+func post_presence(body: Dictionary) -> GSResult:
 	# Refused here as well as on the site: a post the site will refuse is a heartbeat that
 	# did not happen, and the player goes offline to everybody 120 seconds later for a
 	# reason nobody will think to look for.
-	if str(body.get("detail", "")).length() > DotPresence.DETAIL_MAX:
-		return DotResult.fail(DotError.CODE_INVALID, "That presence line is too long.", "presence.deny.detail")
+	if str(body.get("detail", "")).length() > GSPresence.DETAIL_MAX:
+		return GSResult.fail(GSError.CODE_INVALID, "That presence line is too long.", "presence.deny.detail")
 	var res := await _call("POST", "presence", body)
 	if not res.ok:
 		return res
 	var data: Variant = res.value
 	var ttl := 0
 	if data is Dictionary:
-		ttl = DotPresence._int((data as Dictionary).get("ttlSec"))
-	return DotResult.success({"ttlSec": ttl})
+		ttl = GSPresence._int((data as Dictionary).get("ttlSec"))
+	return GSResult.success({"ttlSec": ttl})
 
 
-func fetch_presence(user_ids: PackedStringArray) -> DotResult:
+func fetch_presence(user_ids: PackedStringArray) -> GSResult:
 	if user_ids.is_empty():
-		return DotResult.success({})
+		return GSResult.success({})
 	if user_ids.size() > PRESENCE_BATCH_MAX:
-		return DotResult.fail(DotError.CODE_INVALID, "At most 100 people at once.", "presence.deny.batch")
+		return GSResult.fail(GSError.CODE_INVALID, "At most 100 people at once.", "presence.deny.batch")
 	var res := await _call("GET", "presence", {}, {"userIds": ",".join(user_ids)})
 	if not res.ok:
 		return res
@@ -123,8 +123,8 @@ func fetch_presence(user_ids: PackedStringArray) -> DotResult:
 	if res.value is Dictionary:
 		var data: Dictionary = res.value
 		for k in data:
-			out[str(k)] = DotPresence.from_dict(data[k])
-	return DotResult.success(out)
+			out[str(k)] = GSPresence.from_dict(data[k])
+	return GSResult.success(out)
 
 
 func describe() -> String:
@@ -143,14 +143,14 @@ func describe() -> String:
 ## WARN for it was a warning on every sign-in against every site without the routes, and a
 ## caller that switches friends off for the session (GameSpice Server Deploy's shell does, on the
 ## first bare 404) logged its own line after it: two lines for one fact.
-func _call(method: String, path: String, body: Dictionary = {}, query: Dictionary = {}) -> DotResult:
+func _call(method: String, path: String, body: Dictionary = {}, query: Dictionary = {}) -> GSResult:
 	var res := await _call_inner(method, path, body, query)
 
 	if res.ok:
 		if _failing or _no_routes:
 			_failing = false
 			_no_routes = false
-			DotLog.info(CHANNEL, "the friends service is answering again", {"api": api_base})
+			GSLog.info(CHANNEL, "the friends service is answering again", {"api": api_base})
 		return res
 
 	var fields := {
@@ -162,31 +162,31 @@ func _call(method: String, path: String, body: Dictionary = {}, query: Dictionar
 
 	if _is_missing_route(res):
 		if _no_routes:
-			DotLog.debug(CHANNEL, "the site still has no friends routes", fields)
+			GSLog.debug(CHANNEL, "the site still has no friends routes", fields)
 		else:
 			_no_routes = true
 			fields["api"] = api_base
-			DotLog.info(CHANNEL, "the site does not serve the friends routes yet; friends are unavailable", fields)
+			GSLog.info(CHANNEL, "the site does not serve the friends routes yet; friends are unavailable", fields)
 	elif res.code() in _REFUSALS:
-		DotLog.debug(CHANNEL, "the friends service refused", fields)
+		GSLog.debug(CHANNEL, "the friends service refused", fields)
 	elif _failing:
-		DotLog.debug(CHANNEL, "the friends service is still failing", fields)
+		GSLog.debug(CHANNEL, "the friends service is still failing", fields)
 	else:
 		_failing = true
 		fields["api"] = api_base
-		DotLog.warn(CHANNEL, "the friends service is failing", fields)
+		GSLog.warn(CHANNEL, "the friends service is failing", fields)
 
 	return res
 
 
 ## A 404 with no site code is a site that has not grown the routes: an outage in all but
 ## name, and logged as one rather than as a refusal nobody reads at DEBUG.
-func _is_missing_route(res: DotResult) -> bool:
+func _is_missing_route(res: GSResult) -> bool:
 	# A flag, not the message: matching the text broke the day the text changed.
 	return res.error != null and res.error.http_status == 404 and bool(res.error.context.get("missing_route", false))
 
 
-func _call_inner(method: String, path: String, body: Dictionary = {}, query: Dictionary = {}) -> DotResult:
+func _call_inner(method: String, path: String, body: Dictionary = {}, query: Dictionary = {}) -> GSResult:
 	if request_fn.is_valid() or client == null:
 		var full := path
 		if not query.is_empty():
@@ -194,7 +194,7 @@ func _call_inner(method: String, path: String, body: Dictionary = {}, query: Dic
 			for k in query:
 				parts.append("%s=%s" % [str(k).uri_encode(), str(query[k]).uri_encode()])
 			full += "?" + "&".join(parts)
-		var raw: DotResult = null
+		var raw: GSResult = null
 		if request_fn.is_valid():
 			raw = await request_fn.call(method, full, body)
 		else:
@@ -202,15 +202,15 @@ func _call_inner(method: String, path: String, body: Dictionary = {}, query: Dic
 		if not raw.ok:
 			return _explain(raw)
 		if not (raw.value is Dictionary):
-			return DotResult.fail(DotError.CODE_PARSE, "The friends service answered with something that is not an object.")
+			return GSResult.fail(GSError.CODE_PARSE, "The friends service answered with something that is not an object.")
 		var env: Dictionary = raw.value
 		if env.get("ok") == false:
 			return _refusal(env, 0)
-		return DotResult.success(env.get("data"))
+		return GSResult.success(env.get("data"))
 
 	# Through GameSpice Auth: the envelope is already unwrapped, and a refusal's site code is
 	# already in the error's detail.
-	var res: DotResult = null
+	var res: GSResult = null
 	if method == "GET":
 		res = await client.call("get_app", path, query)
 	else:
@@ -220,14 +220,14 @@ func _call_inner(method: String, path: String, body: Dictionary = {}, query: Dic
 	return res
 
 
-func _http_call(method: String, path: String, body: Dictionary) -> DotResult:
+func _http_call(method: String, path: String, body: Dictionary) -> GSResult:
 	if http == null:
-		return DotResult.fail(DotError.CODE_STATE, "no HTTP client")
+		return GSResult.fail(GSError.CODE_STATE, "no HTTP client")
 	if not token_fn.is_valid():
-		return DotResult.fail(DotError.CODE_AUTH, "Sign in to see your friends.")
+		return GSResult.fail(GSError.CODE_AUTH, "Sign in to see your friends.")
 	var token := str(token_fn.call())
 	if token == "":
-		return DotResult.fail(DotError.CODE_AUTH, "Sign in to see your friends.")
+		return GSResult.fail(GSError.CODE_AUTH, "Sign in to see your friends.")
 	var url := api_base.trim_suffix("/") + "/" + path
 	var headers := {"Authorization": "Bearer %s" % token}
 	if method == "GET":
@@ -236,7 +236,7 @@ func _http_call(method: String, path: String, body: Dictionary) -> DotResult:
 
 
 ## A non-2xx carries the envelope in its body; lift the site's code and message out of it.
-func _explain(raw: DotResult) -> DotResult:
+func _explain(raw: GSResult) -> GSResult:
 	var e := raw.error
 	if e == null:
 		return raw
@@ -248,33 +248,33 @@ func _explain(raw: DotResult) -> DotResult:
 	return raw
 
 
-## [method DotResult.wrap] keeps the code and the status and moves the cause into the
+## [method GSResult.wrap] keeps the code and the status and moves the cause into the
 ## detail — which is where a refusal key would go, and a 404 with no envelope has none.
-func _hint_404(res: DotResult) -> DotResult:
+func _hint_404(res: GSResult) -> GSResult:
 	var wrapped := res.wrap(_NO_ROUTES)
 	wrapped.error.detail = ""
 	wrapped.error.context["missing_route"] = true
 	return wrapped
 
 
-func _refusal(env: Dictionary, status: int, fallback_code: String = DotError.CODE_CONFLICT) -> DotResult:
+func _refusal(env: Dictionary, status: int, fallback_code: String = GSError.CODE_CONFLICT) -> GSResult:
 	var site_code := str(env.get("code", ""))
 	var message := str(env.get("message", "The friends service refused."))
 	var code := fallback_code
 	if status == 0:
-		code = DotError.CODE_CONFLICT
+		code = GSError.CODE_CONFLICT
 		# `token_expired` too: an expired token is the one refusal a client can fix by
 		# signing in again, and read as a conflict it was shown as a refusal to argue with.
 		if site_code == "unauthorized" or site_code == "wrong_credential" \
 				or site_code == "token_expired":
-			code = DotError.CODE_AUTH
+			code = GSError.CODE_AUTH
 		elif site_code.begins_with("rate"):
-			code = DotError.CODE_RATE_LIMITED
-	var err := DotError.make(code, message, site_code)
+			code = GSError.CODE_RATE_LIMITED
+	var err := GSError.make(code, message, site_code)
 	err.http_status = status
 	if env.get("retryAfter") != null:
 		err.retry_after = float(env["retryAfter"])
-	return DotResult.failure(err)
+	return GSResult.failure(err)
 
 ## A refusal's body as a Dictionary, or null — without the engine's own ERROR line.
 ##

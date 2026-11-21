@@ -1,6 +1,6 @@
 @tool
-class_name DotFriendsConfig
-extends DotConfig
+class_name GSFriendsConfig
+extends GSConfig
 
 ## Timings for the player's friends list and their own presence.
 ##
@@ -37,16 +37,16 @@ func cli_prefix() -> String:
 	return "--friends-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if heartbeat_sec * 2.0 > PRESENCE_TTL_SEC:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"a presence heartbeat of %.0fs leaves room for no lost post inside the site's %.0fs lifetime" % [heartbeat_sec, PRESENCE_TTL_SEC],
 			"the player would blink offline to every friend whenever one post was late"
 		)
 	if presence_debounce_sec >= heartbeat_sec:
-		return DotResult.fail(DotError.CODE_INVALID, "the presence debounce is longer than the heartbeat")
-	return DotResult.success(null)
+		return GSResult.fail(GSError.CODE_INVALID, "the presence debounce is longer than the heartbeat")
+	return GSResult.success(null)
 
 
 func describe_lines(_redact_sensitive: bool = true) -> PackedStringArray:

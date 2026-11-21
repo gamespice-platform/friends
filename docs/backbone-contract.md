@@ -2,13 +2,13 @@
 
 What GameSpice Friends speaks. Every route is under `/api/app/v1`, authenticated by the player's app token (`Authorization: Bearer <AppToken>`), and in the app API's envelope: `{ ok: true, data }` or `{ ok: false, code, message, retryAfter? }` (`src/types/app-api/contract.ts`). For a refusal, `code` is an i18n key. Each route must allow `GAME` tokens, because that is the token a game holds.
 
-These routes were specified alongside this addon and are implemented on website-city, where `docs/api/app-social.md` documents them from the site's side; when the two disagree, that page and the site's code are the truth and this one changes. Against a site without them, `DotFriendsBackendApp` turns a bare 404 into "the site has no app friends routes yet" rather than into a refusal, and logs it once at INFO.
+These routes were specified alongside this addon and are implemented on website-city, where `docs/api/app-social.md` documents them from the site's side; when the two disagree, that page and the site's code are the truth and this one changes. Against a site without them, `GSFriendsBackendApp` turns a bare 404 into "the site has no app friends routes yet" rather than into a refusal, and logs it once at INFO.
 
 ## Routes
 
 | Route | Body / query | `data` | Used by |
 | --- | --- | --- | --- |
-| `GET friends` | — | `[Friend]` | `DotFriendsBackendApp.friends`, polled every 30 s |
+| `GET friends` | — | `[Friend]` | `GSFriendsBackendApp.friends`, polled every 30 s |
 | `GET friends/requests` | — | `{ incoming: [Request], outgoing: [Request] }` | `requests`, polled every 60 s |
 | `POST friends/request` | `{ userId }` | `{ id }` | `send_request` |
 | `POST friends/respond` | `{ requestId, accept }` | `null` | `respond` |
@@ -43,7 +43,7 @@ Request  = { id, userId, displayName, createdAt }
 
 ## Refusal keys
 
-The site's tRPC friend procedures (`src/server/api/routers/user/social/friend.ts`) throw English messages; its app routes send these keys, from its `locales/en/friends.json`, and `DotFriendsLocalHub` uses the same ones. **If the site changes one, this table and the hub change together**, and so does the suite section that checks them.
+The site's tRPC friend procedures (`src/server/api/routers/user/social/friend.ts`) throw English messages; its app routes send these keys, from its `locales/en/friends.json`, and `GSFriendsLocalHub` uses the same ones. **If the site changes one, this table and the hub change together**, and so does the suite section that checks them.
 
 | Key | When | Site rule it mirrors |
 | --- | --- | --- |
@@ -64,6 +64,6 @@ And these are the client's own, never sent by the site: `friends.join.deny.notFr
 
 ## What GameSpice Friends duplicates on purpose
 
-`DotFriendsLocalHub` is the site's friend router, rule for rule: one row per pair whoever asked first; **asking somebody who already asked you accepts them** rather than failing; only the declined sender waits the seven days, and the person who declined may always ask; a re-request after a decline re-uses the row and turns it round to face whoever asked last; only the addressee may answer, and anything else is "not found" rather than "not yours"; removing deletes the row, so both have to ask again.
+`GSFriendsLocalHub` is the site's friend router, rule for rule: one row per pair whoever asked first; **asking somebody who already asked you accepts them** rather than failing; only the declined sender waits the seven days, and the person who declined may always ask; a re-request after a decline re-uses the row and turns it round to face whoever asked last; only the addressee may answer, and anything else is "not found" rather than "not yours"; removing deletes the row, so both have to ask again.
 
 It is a copy for the reason GameSpice Party's `CanJoinParty` is: a LAN with no website still has to answer these questions, and a game developed against one set of rules must not meet a different set on launch day. **A change to any of these rules on the site needs the same change here.**

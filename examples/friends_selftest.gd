@@ -27,7 +27,7 @@ var _now: Array[int] = [1_790_000_000]
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	await _run()
 
 
@@ -90,38 +90,38 @@ const SITE_REQUESTS := """{
 func _test_shapes() -> void:
 	_section("The contract's shapes, read as the site sends them")
 
-	var listed := DotFriend.list_from(JSON.parse_string(SITE_FRIENDS))
+	var listed := GSFriend.list_from(JSON.parse_string(SITE_FRIENDS))
 	_check(listed.ok and (listed.value as Array).size() == 3, "the documented GET friends answer parses, all three rows")
-	var ash: DotFriend = (listed.value as Array)[0]
+	var ash: GSFriend = (listed.value as Array)[0]
 	var p := ash.presence
 	_check(ash.user_id == "clx1" and ash.avatar_url.ends_with("clx1.png"), "a friend keeps their id and avatar")
-	_check(p.status == DotPresence.Status.IN_GAME and p.app_id == 3 and p.app_name == "FC", "in_game, in which app")
+	_check(p.status == GSPresence.Status.IN_GAME and p.app_id == 3 and p.app_name == "FC", "in_game, in which app")
 	_check(p.server_id == 4821 and p.server_name == "FC #1", "on which server, as the site's integer id")
 	_check(p.party_id == "9007199254740993", "a party id past 2^53 survives, because it is a string")
 	_check(p.joinable and p.detail == "Round 3 of 5", "joinable, with the game's line")
 	_check(p.updated_at == 1790193600, "an ISO time with milliseconds and a Z reads as the right second")
-	var bo: DotFriend = (listed.value as Array)[1]
+	var bo: GSFriend = (listed.value as Array)[1]
 	_check(bo.avatar_url == "" and not bo.is_online() and bo.presence.updated_at == 0, "every null reads as empty, never as the text <null>")
 	_check(not bo.presence.has_destination(), "and an offline presence goes nowhere")
-	_check(((listed.value as Array)[2] as DotFriend).presence.status == DotPresence.Status.AWAY, "away is its own status")
-	_check(not DotFriend.from_dict({"displayName": "ghost"}).ok, "a friend with no user id is refused rather than kept as a ghost")
-	var one_bad := DotFriend.list_from([{"userId": "a"}, {"displayName": "ghost"}, "junk"])
+	_check(((listed.value as Array)[2] as GSFriend).presence.status == GSPresence.Status.AWAY, "away is its own status")
+	_check(not GSFriend.from_dict({"displayName": "ghost"}).ok, "a friend with no user id is refused rather than kept as a ghost")
+	var one_bad := GSFriend.list_from([{"userId": "a"}, {"displayName": "ghost"}, "junk"])
 	_check(one_bad.ok and (one_bad.value as Array).size() == 1, "and one bad row costs that row, not the list")
-	_check(DotPresence.from_dict(null).status == DotPresence.Status.OFFLINE, "a null presence is offline")
-	var future := DotPresence.from_dict({"status": "busy"})
-	_check(future.status == DotPresence.Status.ONLINE and future.status_raw == "busy", "a status this version does not know reads as online, and keeps its name")
+	_check(GSPresence.from_dict(null).status == GSPresence.Status.OFFLINE, "a null presence is offline")
+	var future := GSPresence.from_dict({"status": "busy"})
+	_check(future.status == GSPresence.Status.ONLINE and future.status_raw == "busy", "a status this version does not know reads as online, and keeps its name")
 
-	var reqs := DotFriendRequest.lists_from(JSON.parse_string(SITE_REQUESTS))
+	var reqs := GSFriendRequest.lists_from(JSON.parse_string(SITE_REQUESTS))
 	var inc: Array = (reqs.value as Dictionary)["incoming"]
 	var outg: Array = (reqs.value as Dictionary)["outgoing"]
 	_check(reqs.ok and inc.size() == 1 and outg.size() == 1, "the documented GET friends/requests answer parses")
-	var r: DotFriendRequest = inc[0]
+	var r: GSFriendRequest = inc[0]
 	_check(r.id == 41 and r.user_id == "clx7" and not r.outgoing, "an incoming request names its sender, with the site's integer id")
-	_check((outg[0] as DotFriendRequest).outgoing and (outg[0] as DotFriendRequest).user_id == "clx8", "an outgoing one names its addressee")
+	_check((outg[0] as GSFriendRequest).outgoing and (outg[0] as GSFriendRequest).user_id == "clx8", "an outgoing one names its addressee")
 
 	var back := ash.copy()
 	_check(back.presence.same_as(ash.presence) and back.presence.updated_at == ash.presence.updated_at, "a friend round-trips through its own dictionary")
-	_check(str(DotPresence.format_time(1790193600))[10] == "T", "and writes times with the T, as RFC 3339 wants")
+	_check(str(GSPresence.format_time(1790193600))[10] == "T", "and writes times with the T, as RFC 3339 wants")
 
 
 # --- 2 ----------------------------------------------------------------------
@@ -148,7 +148,7 @@ func _test_requests() -> void:
 	var twice := ada.send_request("bo")
 	_check(not twice.ok and twice.error.detail == "friends.request.deny.pending", "a second request while one is pending is refused")
 	var bo_in: Array = (bo.requests().value as Dictionary)["incoming"]
-	_check(bo_in.size() == 1 and (bo_in[0] as DotFriendRequest).user_id == "ada", "the addressee sees it as incoming, from the sender")
+	_check(bo_in.size() == 1 and (bo_in[0] as GSFriendRequest).user_id == "ada", "the addressee sees it as incoming, from the sender")
 	_check(((ada.requests().value as Dictionary)["outgoing"] as Array).size() == 1, "the sender sees it as outgoing")
 	var wrong := cy.respond(int((sent.value as Dictionary)["id"]), true)
 	_check(not wrong.ok and wrong.error.detail == "friends.respond.deny.notFound", "somebody else cannot answer it")
@@ -170,14 +170,14 @@ func _test_requests() -> void:
 	_check(cy.send_request("ada").ok, "but the one who declined may always ask")
 	var both: Dictionary = ada.requests().value
 	_check((both["incoming"] as Array).size() == 1 and (both["outgoing"] as Array).is_empty(), "and the row turns round to face whoever asked last")
-	ada.respond(int(((both["incoming"] as Array)[0] as DotFriendRequest).id), true)
+	ada.respond(int(((both["incoming"] as Array)[0] as GSFriendRequest).id), true)
 	_check(hub.are_friends("ada", "cy"), "which the other side can then accept")
 
-	_now[0] += DotFriendsLocalHub.REREQUEST_COOLDOWN_SEC + 1
+	_now[0] += GSFriendsLocalHub.REREQUEST_COOLDOWN_SEC + 1
 	hub.as_user("eve", "Eve")
 	var to_eve := ada.send_request("eve")
 	hub.as_user("eve").respond(int((to_eve.value as Dictionary)["id"]), false)
-	_now[0] += DotFriendsLocalHub.REREQUEST_COOLDOWN_SEC + 1
+	_now[0] += GSFriendsLocalHub.REREQUEST_COOLDOWN_SEC + 1
 	var later := ada.send_request("eve")
 	_check(later.ok and int((later.value as Dictionary)["id"]) == int((to_eve.value as Dictionary)["id"]), "a week later the sender may ask again, on the same row as the site does")
 
@@ -194,7 +194,7 @@ func _test_requests() -> void:
 	_check(not not_mine.ok and not_mine.error.detail == "friends.cancel.deny.notFound", "only the sender can withdraw a request")
 	_check(ada.cancel_request(wid).ok, "the sender withdraws it")
 	var still_out: Array = []
-	for r: DotFriendRequest in (ada.requests().value as Dictionary)["outgoing"]:
+	for r: GSFriendRequest in (ada.requests().value as Dictionary)["outgoing"]:
 		still_out.append(r.id)
 	_check(((hub.as_user("dee").requests().value as Dictionary)["incoming"] as Array).is_empty()
 		and wid > 0 and not still_out.has(wid) and not still_out.is_empty(),
@@ -218,23 +218,23 @@ func _test_presence_privacy() -> void:
 
 	var posted := ada.post_presence({"status": "in_game", "serverId": 4821, "partyId": "4471", "joinable": true, "detail": "Round 3"})
 	_check(posted.ok and int((posted.value as Dictionary)["ttlSec"]) == 120, "a post is accepted with the site's lifetime")
-	var seen: DotPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
-	_check(seen.status == DotPresence.Status.IN_GAME and seen.server_id == 4821 and seen.party_id == "4471", "a friend sees where they are")
+	var seen: GSPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
+	_check(seen.status == GSPresence.Status.IN_GAME and seen.server_id == 4821 and seen.party_id == "4471", "a friend sees where they are")
 	_check(seen.app_name == "FC" and seen.server_name == "FC #1", "in which app, from the token rather than the post, and the server's name")
 	_check(seen.updated_at == _now[0], "stamped when it was posted")
-	var list_row: DotFriend = (bo.friends().value as Array)[0]
+	var list_row: GSFriend = (bo.friends().value as Array)[0]
 	_check(list_row.presence.same_as(seen), "the friends list and the presence route agree")
 
 	var stranger: Dictionary = cy.fetch_presence(PackedStringArray(["ada"])).value
 	_check(stranger.is_empty(), "a stranger asking for it gets nothing back, not even offline")
-	_check(hub.presence_seen_by("cy", "ada").status == DotPresence.Status.OFFLINE, "and is shown offline wherever it would be drawn")
+	_check(hub.presence_seen_by("cy", "ada").status == GSPresence.Status.OFFLINE, "and is shown offline wherever it would be drawn")
 
 	hub.set_activity_hidden("ada", true)
-	var hidden: DotPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
-	_check(hidden.status == DotPresence.Status.OFFLINE, "hiding activity is offline to friends too")
+	var hidden: GSPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
+	_check(hidden.status == GSPresence.Status.OFFLINE, "hiding activity is offline to friends too")
 	_check(not hidden.has_destination() and not hidden.joinable and hidden.updated_at == 0 and hidden.app_name == "", "with nothing left in it that says otherwise")
 	hub.set_activity_hidden("ada", false)
-	_check((bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"].status == DotPresence.Status.IN_GAME, "and unhiding shows them again")
+	_check((bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"].status == GSPresence.Status.IN_GAME, "and unhiding shows them again")
 
 	var long_line := ada.post_presence({"status": "online", "detail": "x".repeat(129)})
 	_check(not long_line.ok and long_line.error.detail == "presence.deny.detail", "a line over 128 characters is refused")
@@ -247,8 +247,8 @@ func _test_presence_privacy() -> void:
 	_check(not batch.ok and batch.error.detail == "presence.deny.batch", "and a hundred and one people at once")
 
 	ada.post_presence({"status": "offline", "serverId": 4821, "joinable": true})
-	var off: DotPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
-	_check(off.status == DotPresence.Status.OFFLINE and not off.joinable and off.server_id == 0, "posting offline clears everything, whatever else the post said")
+	var off: GSPresence = (bo.fetch_presence(PackedStringArray(["ada"])).value as Dictionary)["ada"]
+	_check(off.status == GSPresence.Status.OFFLINE and not off.joinable and off.server_id == 0, "posting offline clears everything, whatever else the post said")
 
 
 # --- 4 ----------------------------------------------------------------------
@@ -267,7 +267,7 @@ func _test_ttl() -> void:
 	_now[0] += 1
 	_check(not hub.presence_seen_by("bo", "ada").is_online(), "at 120 they are offline, with nobody having said so")
 	ada.post_presence({"status": "away"})
-	_check(hub.presence_seen_by("bo", "ada").status == DotPresence.Status.AWAY, "a new post brings them back")
+	_check(hub.presence_seen_by("bo", "ada").status == GSPresence.Status.AWAY, "a new post brings them back")
 	_now[0] += 60
 	ada.post_presence({"status": "away"})
 	_now[0] += 100
@@ -293,12 +293,12 @@ func _test_client_diff() -> void:
 
 	var client := _client(ada_backend)
 	var ev: Array = []
-	client.friend_added.connect(func(f: DotFriend) -> void: ev.append("added:" + f.user_id))
-	client.friend_removed.connect(func(f: DotFriend) -> void: ev.append("removed:" + f.user_id))
-	client.friend_online.connect(func(f: DotFriend) -> void: ev.append("online:" + f.user_id))
-	client.friend_offline.connect(func(f: DotFriend) -> void: ev.append("offline:" + f.user_id))
-	client.friend_presence_changed.connect(func(f: DotFriend, _old: DotPresence) -> void: ev.append("changed:" + f.user_id))
-	client.request_received.connect(func(r: DotFriendRequest) -> void: ev.append("request:" + r.user_id))
+	client.friend_added.connect(func(f: GSFriend) -> void: ev.append("added:" + f.user_id))
+	client.friend_removed.connect(func(f: GSFriend) -> void: ev.append("removed:" + f.user_id))
+	client.friend_online.connect(func(f: GSFriend) -> void: ev.append("online:" + f.user_id))
+	client.friend_offline.connect(func(f: GSFriend) -> void: ev.append("offline:" + f.user_id))
+	client.friend_presence_changed.connect(func(f: GSFriend, _old: GSPresence) -> void: ev.append("changed:" + f.user_id))
+	client.request_received.connect(func(r: GSFriendRequest) -> void: ev.append("request:" + r.user_id))
 	var snapshots: Array = []
 	client.friends_changed.connect(func(list: Array) -> void: snapshots.append(list.size()))
 
@@ -347,7 +347,7 @@ func _test_client_diff() -> void:
 	await client.refresh()
 	_check(ev == ["removed:cy"], "a friend removing you is announced")
 	var failures: Array = []
-	client.request_failed.connect(func(what: String, _e: DotError) -> void: failures.append(what))
+	client.request_failed.connect(func(what: String, _e: GSError) -> void: failures.append(what))
 	var refused := await client.send_request("ada")
 	_check(not refused.ok and failures == ["send_request"], "a refused action says so and leaves the list alone")
 
@@ -358,25 +358,25 @@ func _test_client_diff() -> void:
 
 ## A local backend that remembers every post and can answer with a different lifetime.
 class CountingBackend:
-	extends DotFriendsBackendLocal
+	extends GSFriendsBackendLocal
 	var posts: Array = []
 	var ttl_override: int = 0
 
-	func post_presence(body: Dictionary) -> DotResult:
+	func post_presence(body: Dictionary) -> GSResult:
 		posts.append(body.duplicate())
 		var res := hub.post_presence(user_id, body, app_id, app_name)
 		if res.ok and ttl_override > 0:
-			return DotResult.success({"ttlSec": ttl_override})
+			return GSResult.success({"ttlSec": ttl_override})
 		return res
 
 
 class SlowBackend:
-	extends DotFriendsBackendLocal
+	extends GSFriendsBackendLocal
 	signal release
 	var posts: Array = []
 	var landed: Array = []
 
-	func post_presence(body: Dictionary) -> DotResult:
+	func post_presence(body: Dictionary) -> GSResult:
 		posts.append(body.duplicate())
 		await release
 		landed.append(body["status"])
@@ -414,7 +414,7 @@ func _test_presence_posting() -> void:
 	_check(counting.posts.size() == 2, "and one post half a second after its first change, not after its last")
 	var body: Dictionary = counting.posts[1]
 	_check(body["serverId"] == 4821 and body["partyId"] == "4471" and body["joinable"] == true, "carrying all three")
-	var seen: DotPresence = bo.fetch_presence(PackedStringArray(["ada"])).value["ada"]
+	var seen: GSPresence = bo.fetch_presence(PackedStringArray(["ada"])).value["ada"]
 	_check(seen.server_id == 4821 and seen.party_id == "4471" and seen.joinable, "which is what the friend now sees")
 
 	client.set_joinable(false)
@@ -431,7 +431,7 @@ func _test_presence_posting() -> void:
 	_check(counting.posts.size() == 2, "no heartbeat before the interval")
 	client.advance(2.0)
 	_check(counting.posts.size() == 3 and counting.posts[2] == counting.posts[1], "the heartbeat repeats the same presence at 45 seconds")
-	_check(client.heartbeat_interval() * 2.0 < DotFriendsConfig.PRESENCE_TTL_SEC, "well inside the site's lifetime, with room for a lost post")
+	_check(client.heartbeat_interval() * 2.0 < GSFriendsConfig.PRESENCE_TTL_SEC, "well inside the site's lifetime, with room for a lost post")
 
 	counting.ttl_override = 30
 	client.set_detail("Round 2")
@@ -452,7 +452,7 @@ func _test_presence_posting() -> void:
 
 
 ## A post still in flight when the game quits.
-func _presence_in_flight(hub: DotFriendsLocalHub) -> void:
+func _presence_in_flight(hub: GSFriendsLocalHub) -> void:
 	var slow := SlowBackend.new()
 	slow.hub = hub
 	slow.user_id = "ada"
@@ -500,45 +500,45 @@ func _test_join() -> void:
 	await client.refresh()
 	var party_calls: Array = []
 	var server_calls: Array = []
-	var party_answer: Array = [DotResult.success({"partyId": "4471"})]
-	client.join_party_fn = func(pid: String, f: DotFriend) -> DotResult:
+	var party_answer: Array = [GSResult.success({"partyId": "4471"})]
+	client.join_party_fn = func(pid: String, f: GSFriend) -> GSResult:
 		party_calls.append([pid, f.user_id])
 		return party_answer[0]
-	client.connect_fn = func(sid: int, f: DotFriend) -> DotResult:
+	client.connect_fn = func(sid: int, f: GSFriend) -> GSResult:
 		server_calls.append([sid, f.user_id])
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	var via_party := await client.join("bo")
 	_check(via_party.ok and via_party.value["via"] == "party" and party_calls == [["4471", "bo"]], "a joinable party is joined")
 	_check(server_calls.is_empty(), "and the server is left to the party, rather than connected to twice")
 
-	party_answer[0] = DotResult.fail(DotError.CODE_CONFLICT, "That party is full.", "party.join.deny.full")
+	party_answer[0] = GSResult.fail(GSError.CODE_CONFLICT, "That party is full.", "party.join.deny.full")
 	var fallback := await client.join("bo")
 	_check(fallback.ok and fallback.value["via"] == "server" and server_calls == [[4821, "bo"]], "a party that refuses falls back to the friend's server")
-	_check((fallback.value["partyRefused"] as DotError).detail == "party.join.deny.full", "and says why it went the long way round")
+	_check((fallback.value["partyRefused"] as GSError).detail == "party.join.deny.full", "and says why it went the long way round")
 
-	var server_answer: Array = [DotResult.fail(DotError.CODE_NETWORK, "That server is full.", "server.full")]
-	client.connect_fn = func(sid: int, f: DotFriend) -> DotResult:
+	var server_answer: Array = [GSResult.fail(GSError.CODE_NETWORK, "That server is full.", "server.full")]
+	client.connect_fn = func(sid: int, f: GSFriend) -> GSResult:
 		server_calls.append([sid, f.user_id])
 		return server_answer[0]
 	var both_refused := await client.join("bo")
 	_check(
 		not both_refused.ok and both_refused.error.detail == "server.full"
-			and both_refused.error.context.get("partyRefused") is DotError
-			and (both_refused.error.context["partyRefused"] as DotError).detail == "party.join.deny.full",
+			and both_refused.error.context.get("partyRefused") is GSError
+			and (both_refused.error.context["partyRefused"] as GSError).detail == "party.join.deny.full",
 		"refused both ways, the server's no still carries the party's"
 	)
-	client.connect_fn = func(sid: int, f: DotFriend) -> DotResult:
+	client.connect_fn = func(sid: int, f: GSFriend) -> GSResult:
 		server_calls.append([sid, f.user_id])
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	# A callback that breaks the contract is an error, not a join that happened.
-	client.join_party_fn = func(_pid: String, _f: DotFriend) -> bool:
+	client.join_party_fn = func(_pid: String, _f: GSFriend) -> bool:
 		return true
 	var bad_fn := await client.join("bo")
 	_check(
 		bad_fn.ok and bad_fn.value["via"] == "server"
-			and (bad_fn.value["partyRefused"] as DotError).detail == "friends.join.badPartyFn",
+			and (bad_fn.value["partyRefused"] as GSError).detail == "friends.join.badPartyFn",
 		"a join_party_fn that returns a bool is an error, and the server is tried"
 	)
 	var only_party := _client(ada_backend)
@@ -550,7 +550,7 @@ func _test_join() -> void:
 		"and with no server to fall back on it is refused, not reported joined"
 	)
 	only_party.queue_free()
-	client.join_party_fn = func(pid: String, f: DotFriend) -> DotResult:
+	client.join_party_fn = func(pid: String, f: GSFriend) -> GSResult:
 		party_calls.append([pid, f.user_id])
 		return party_answer[0]
 
@@ -562,7 +562,7 @@ func _test_join() -> void:
 	await _join_changed_since_poll(hub, ada_backend, client)
 
 
-func _join_refusals(client: DotFriendsClient) -> void:
+func _join_refusals(client: GSFriendsClient) -> void:
 	var closed := await client.join("dee")
 	_check(not closed.ok and closed.error.detail == "friends.join.deny.notJoinable", "a friend who is not joinable is refused, with a key")
 	var asleep := await client.join("eve")
@@ -571,7 +571,7 @@ func _join_refusals(client: DotFriendsClient) -> void:
 	_check(not stranger.ok and stranger.error.detail == "friends.join.deny.notFriend", "somebody not on the list is refused as not a friend")
 
 
-func _join_changed_since_poll(hub: DotFriendsLocalHub, ada_backend: DotFriendsBackend, client: DotFriendsClient) -> void:
+func _join_changed_since_poll(hub: GSFriendsLocalHub, ada_backend: GSFriendsBackend, client: GSFriendsClient) -> void:
 	var no_party_fn := _client(ada_backend)
 	await no_party_fn.refresh()
 	no_party_fn.connect_fn = client.connect_fn
@@ -591,11 +591,11 @@ func _join_changed_since_poll(hub: DotFriendsLocalHub, ada_backend: DotFriendsBa
 	var unfriended := await client.join("bo")
 	_check(not unfriended.ok and unfriended.error.detail == "friends.join.deny.notFriend", "a friendship ended since the last poll is refused too")
 
-	client.connect_fn = func(_sid: int, _f: DotFriend) -> DotResult:
-		return DotResult.fail(DotError.CODE_NETWORK, "Could not reach the server.")
+	client.connect_fn = func(_sid: int, _f: GSFriend) -> GSResult:
+		return GSResult.fail(GSError.CODE_NETWORK, "Could not reach the server.")
 	hub.as_user("cy").post_presence({"status": "in_game", "serverId": 7, "joinable": true})
 	var unreachable := await client.join("cy")
-	_check(not unreachable.ok and unreachable.error.code == DotError.CODE_NETWORK, "a connect that fails is the game's failure, passed back as it was")
+	_check(not unreachable.ok and unreachable.error.code == GSError.CODE_NETWORK, "a connect that fails is the game's failure, passed back as it was")
 
 	client.queue_free()
 	no_party_fn.queue_free()
@@ -606,13 +606,13 @@ func _join_changed_since_poll(hub: DotFriendsLocalHub, ada_backend: DotFriendsBa
 class FakeAuthClient:
 	extends RefCounted
 	var calls: Array = []
-	var answer: DotResult = DotResult.success(null)
+	var answer: GSResult = GSResult.success(null)
 
-	func get_app(path: String, query: Dictionary = {}) -> DotResult:
+	func get_app(path: String, query: Dictionary = {}) -> GSResult:
 		calls.append(["GET", path, query])
 		return answer
 
-	func post_app(path: String, body: Dictionary) -> DotResult:
+	func post_app(path: String, body: Dictionary) -> GSResult:
 		calls.append(["POST", path, body])
 		return answer
 
@@ -622,41 +622,41 @@ func _test_app_backend() -> void:
 
 	var sent: Array = []
 	var answers: Array = []
-	var app := DotFriendsBackendApp.new("https://tmc.example/api/app/v1")
-	app.request_fn = func(method: String, path: String, body: Dictionary) -> DotResult:
+	var app := GSFriendsBackendApp.new("https://tmc.example/api/app/v1")
+	app.request_fn = func(method: String, path: String, body: Dictionary) -> GSResult:
 		sent.append([method, path, body])
 		return answers.pop_front()
 
-	answers.append(DotResult.success({"ok": true, "data": JSON.parse_string(SITE_FRIENDS)}))
+	answers.append(GSResult.success({"ok": true, "data": JSON.parse_string(SITE_FRIENDS)}))
 	var listed := await app.friends()
 	_check(listed.ok and (listed.value as Array).size() == 3 and sent[0][0] == "GET" and sent[0][1] == "friends", "GET friends comes back as friends")
 
-	answers.append(DotResult.success({"ok": true, "data": JSON.parse_string(SITE_REQUESTS)}))
+	answers.append(GSResult.success({"ok": true, "data": JSON.parse_string(SITE_REQUESTS)}))
 	var reqs := await app.requests()
 	_check(reqs.ok and sent[1][1] == "friends/requests" and ((reqs.value as Dictionary)["incoming"] as Array).size() == 1, "GET friends/requests comes back as requests")
 
-	answers.append(DotResult.success({"ok": true, "data": {"id": 42}}))
+	answers.append(GSResult.success({"ok": true, "data": {"id": 42}}))
 	var made := await app.send_request("clx9")
 	_check(made.ok and int((made.value as Dictionary)["id"]) == 42 and sent[2][1] == "friends/request" and sent[2][2] == {"userId": "clx9"}, "POST friends/request with the site's field name")
 
-	answers.append(DotResult.success({"ok": true, "data": null}))
+	answers.append(GSResult.success({"ok": true, "data": null}))
 	await app.respond(41, true)
 	_check(sent[3][2] == {"requestId": 41, "accept": true} and sent[3][2]["requestId"] is int, "POST friends/respond sends the request id as the integer the site gave")
 
-	answers.append(DotResult.success({"ok": true, "data": null}))
+	answers.append(GSResult.success({"ok": true, "data": null}))
 	var removed := await app.remove_friend("clx2")
 	_check(removed.ok and sent[4][1] == "friends/remove" and sent[4][2] == {"userId": "clx2"}, "POST friends/remove")
 
-	answers.append(DotResult.success({"ok": true, "data": {"ttlSec": 120}}))
+	answers.append(GSResult.success({"ok": true, "data": {"ttlSec": 120}}))
 	var body := {"status": "in_game", "serverId": 4821, "joinable": true}
 	var posted := await app.post_presence(body)
 	_check(posted.ok and int((posted.value as Dictionary)["ttlSec"]) == 120 and sent[5][2] == body, "POST presence sends the body as given and returns the lifetime")
 
-	answers.append(DotResult.success({"ok": true, "data": {"clx1": {"status": "online"}, "clx2": null}}))
+	answers.append(GSResult.success({"ok": true, "data": {"clx1": {"status": "online"}, "clx2": null}}))
 	var pres := await app.fetch_presence(PackedStringArray(["clx1", "clx2"]))
 	var path := str(sent[6][1])
 	_check(path.begins_with("presence?userIds=") and path.get_slice("=", 1).uri_decode() == "clx1,clx2", "GET presence names its people as one comma-separated query")
-	_check(pres.ok and (pres.value["clx1"] as DotPresence).is_online() and not (pres.value["clx2"] as DotPresence).is_online(), "and each comes back as a presence, a null one as offline")
+	_check(pres.ok and (pres.value["clx1"] as GSPresence).is_online() and not (pres.value["clx2"] as GSPresence).is_online(), "and each comes back as a presence, a null one as offline")
 
 	var n := sent.size()
 	var many := PackedStringArray()
@@ -666,25 +666,25 @@ func _test_app_backend() -> void:
 	var too_long := await app.post_presence({"status": "online", "detail": "x".repeat(129)})
 	_check(not too_many.ok and not too_long.ok and too_long.error.detail == "presence.deny.detail" and sent.size() == n, "a batch or a line the site would refuse is refused before a request is made")
 
-	answers.append(DotResult.success({"ok": false, "code": "friends.request.deny.self", "message": "You cannot add yourself."}))
+	answers.append(GSResult.success({"ok": false, "code": "friends.request.deny.self", "message": "You cannot add yourself."}))
 	var self_req := await app.send_request("me")
 	_check(not self_req.ok and self_req.error.detail == "friends.request.deny.self" and self_req.error.message == "You cannot add yourself.", "a refusal keeps the site's key and its message")
 
-	answers.append(DotResult.failure(DotError.from_http(409, "{\"ok\":false,\"code\":\"friends.request.deny.pending\",\"message\":\"A request is already pending.\"}")))
+	answers.append(GSResult.failure(GSError.from_http(409, "{\"ok\":false,\"code\":\"friends.request.deny.pending\",\"message\":\"A request is already pending.\"}")))
 	var pending := await app.send_request("clx9")
 	_check(not pending.ok and pending.error.detail == "friends.request.deny.pending" and pending.error.http_status == 409, "so does one that arrives as a non-2xx with the envelope in its body")
 
-	answers.append(DotResult.success({"ok": false, "code": "token_expired", "message": "Sign in again."}))
+	answers.append(GSResult.success({"ok": false, "code": "token_expired", "message": "Sign in again."}))
 	var expired := await app.send_request("clx9")
-	_check(not expired.ok and expired.error.code == DotError.CODE_AUTH, "an expired token with no HTTP status is an auth failure, not a conflict")
+	_check(not expired.ok and expired.error.code == GSError.CODE_AUTH, "an expired token with no HTTP status is an auth failure, not a conflict")
 
-	answers.append(DotResult.failure(DotError.from_http(429, "{\"ok\":false,\"code\":\"rate_limited\",\"message\":\"Slow down.\",\"retryAfter\":12}")))
+	answers.append(GSResult.failure(GSError.from_http(429, "{\"ok\":false,\"code\":\"rate_limited\",\"message\":\"Slow down.\",\"retryAfter\":12}")))
 	var slow := await app.post_presence({"status": "online"})
-	_check(not slow.ok and slow.error.retry_after == 12.0 and slow.error.code == DotError.CODE_RATE_LIMITED, "a 429 keeps its retry-after")
+	_check(not slow.ok and slow.error.retry_after == 12.0 and slow.error.code == GSError.CODE_RATE_LIMITED, "a 429 keeps its retry-after")
 
 	await _app_backend_bare_404_logs_once()
 
-	answers.append(DotResult.failure(DotError.from_http(404, "")))
+	answers.append(GSResult.failure(GSError.from_http(404, "")))
 	var missing := await app.friends()
 	_check(not missing.ok and missing.error.message.contains("no app friends routes") and missing.error.detail == "", "a bare 404 says the site has not grown the routes, and invents no key")
 
@@ -697,36 +697,36 @@ func _app_backend_bare_404_logs_once() -> void:
 	# backend, because the 429 above has this one mid-outage already.
 	var said: Array = []
 	var listen := func(rec: Dictionary) -> void:
-		if str(rec.get("channel", "")) == DotFriendsBackendApp.CHANNEL and int(rec.get("level", 0)) >= DotLog.Level.INFO:
+		if str(rec.get("channel", "")) == GSFriendsBackendApp.CHANNEL and int(rec.get("level", 0)) >= GSLog.Level.INFO:
 			said.append(rec)
-	var was_level := DotLog.get_level()
-	DotLog.set_level(DotLog.Level.INFO)
-	DotLog.add_sink(listen)
-	var bare := DotFriendsBackendApp.new("https://tmc.example/api/app/v1")
-	bare.request_fn = func(_m: String, _p: String, _b: Dictionary) -> DotResult:
-		return DotResult.failure(DotError.from_http(404, ""))
+	var was_level := GSLog.get_level()
+	GSLog.set_level(GSLog.Level.INFO)
+	GSLog.add_sink(listen)
+	var bare := GSFriendsBackendApp.new("https://tmc.example/api/app/v1")
+	bare.request_fn = func(_m: String, _p: String, _b: Dictionary) -> GSResult:
+		return GSResult.failure(GSError.from_http(404, ""))
 	for i in range(3):
 		var _r := await bare.friends()
-	DotLog.remove_sink(listen)
-	DotLog.set_level(was_level)
+	GSLog.remove_sink(listen)
+	GSLog.set_level(was_level)
 	_check(said.size() == 1, "a site without the routes says so once, not once per call (%d lines)" % said.size())
-	_check(said.size() == 1 and int(said[0]["level"]) == DotLog.Level.INFO, "and at INFO: it is the site as deployed, not an outage")
+	_check(said.size() == 1 and int(said[0]["level"]) == GSLog.Level.INFO, "and at INFO: it is the site as deployed, not an outage")
 
 
 func _app_backend_through_auth() -> void:
 	var auth := FakeAuthClient.new()
-	var via_auth := DotFriendsBackendApp.new()
+	var via_auth := GSFriendsBackendApp.new()
 	via_auth.client = auth
-	auth.answer = DotResult.success({"clx1": {"status": "away"}})
+	auth.answer = GSResult.success({"clx1": {"status": "away"}})
 	var through := await via_auth.fetch_presence(PackedStringArray(["clx1"]))
 	_check(through.ok and auth.calls[0][0] == "GET" and auth.calls[0][1] == "presence" and (auth.calls[0][2] as Dictionary)["userIds"] == "clx1", "through dot-auth's client, the query goes as a query")
-	auth.answer = DotResult.failure(DotError.make(DotError.CODE_FORBIDDEN, "This member is not accepting friend requests.", "friends.request.deny.closed"))
+	auth.answer = GSResult.failure(GSError.make(GSError.CODE_FORBIDDEN, "This member is not accepting friend requests.", "friends.request.deny.closed"))
 	var closed := await via_auth.send_request("clx9")
 	_check(not closed.ok and closed.error.detail == "friends.request.deny.closed" and auth.calls[1][2] == {"userId": "clx9"}, "and a refusal keeps the site's key")
-	auth.answer = DotResult.failure(DotError.from_http(404, ""))
+	auth.answer = GSResult.failure(GSError.from_http(404, ""))
 	var auth_404 := await via_auth.friends()
 	_check(not auth_404.ok and auth_404.error.message.contains("no app friends routes"), "and a bare 404 through it gets the same hint")
-	auth.answer = DotResult.success(null)
+	auth.answer = GSResult.success(null)
 	var withdrawn := await via_auth.cancel_request(41)
 	_check(withdrawn.ok and auth.calls[3][0] == "POST" and auth.calls[3][1] == "friends/cancel"
 		and auth.calls[3][2] == {"requestId": 41} and (auth.calls[3][2] as Dictionary)["requestId"] is int,
@@ -738,7 +738,7 @@ func _app_backend_through_auth() -> void:
 func _test_config() -> void:
 	_section("The config refuses a heartbeat the site's lifetime cannot absorb")
 
-	var c := DotFriendsConfig.new()
+	var c := GSFriendsConfig.new()
 	_check(c.validate().ok, "the defaults are valid")
 	c.heartbeat_sec = 70.0
 	_check(not c.validate().ok, "a heartbeat over half the 120-second lifetime is refused")
@@ -749,20 +749,20 @@ func _test_config() -> void:
 
 # --- helpers ------------------------------------------------------------------
 
-func _hub() -> DotFriendsLocalHub:
-	var hub := DotFriendsLocalHub.new()
+func _hub() -> GSFriendsLocalHub:
+	var hub := GSFriendsLocalHub.new()
 	hub.now_fn = func() -> int: return _now[0]
 	return hub
 
 
-func _befriend(hub: DotFriendsLocalHub, a: String, b: String) -> void:
+func _befriend(hub: GSFriendsLocalHub, a: String, b: String) -> void:
 	var sent := hub.send_request(a, b)
 	hub.respond(b, int((sent.value as Dictionary)["id"]), true)
 
 
 ## A client in the tree with processing off: the suite moves its clock with advance().
-func _client(backend: DotFriendsBackend) -> DotFriendsClient:
-	var c := DotFriendsClient.new()
+func _client(backend: GSFriendsBackend) -> GSFriendsClient:
+	var c := GSFriendsClient.new()
 	c.backend = backend
 	add_child(c)
 	c.set_process(false)

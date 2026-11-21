@@ -1,4 +1,4 @@
-class_name DotPresence
+class_name GSPresence
 extends RefCounted
 
 ## Where one person is right now, as the backbone reports it to their friends.
@@ -52,8 +52,8 @@ var detail: String = ""
 var updated_at: int = 0
 
 
-static func offline() -> DotPresence:
-	return DotPresence.new()
+static func offline() -> GSPresence:
+	return GSPresence.new()
 
 
 ## Unknown statuses read as ONLINE, not OFFLINE. An unknown status is the site having
@@ -73,8 +73,8 @@ static func status_name(s: Status) -> String:
 ## Reads a presence object exactly as the site sends it. Tolerant of absent and null
 ## fields — every one of them is nullable in the contract — and of a null presence, which
 ## is offline.
-static func from_dict(d: Variant) -> DotPresence:
-	var p := DotPresence.new()
+static func from_dict(d: Variant) -> GSPresence:
+	var p := GSPresence.new()
 	if not (d is Dictionary):
 		return p
 	var src: Dictionary = d
@@ -107,8 +107,8 @@ func to_dict() -> Dictionary:
 	}
 
 
-func copy() -> DotPresence:
-	return DotPresence.from_dict(to_dict())
+func copy() -> GSPresence:
+	return GSPresence.from_dict(to_dict())
 
 
 func is_online() -> bool:
@@ -124,7 +124,7 @@ func has_destination() -> bool:
 ##
 ## [member updated_at] is left out on purpose: it moves on every heartbeat, and a client
 ## that diffed on it would announce "presence changed" every 45 seconds for every friend.
-func same_as(other: DotPresence) -> bool:
+func same_as(other: GSPresence) -> bool:
 	if other == null:
 		return false
 	return status_raw == other.status_raw \

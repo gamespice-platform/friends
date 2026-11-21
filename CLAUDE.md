@@ -18,14 +18,14 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 
 | Path | What |
 | --- | --- |
-| `core/dot_presence.gd` | `DotPresence`: status, app, server, party, joinable, detail, when. Offline is a blank. `same_as`, `has_destination` |
-| `core/dot_friend.gd` | `DotFriend`: one friend and their presence, as `GET friends` returns them |
-| `core/dot_friend_request.gd` | `DotFriendRequest`: one pending request, incoming or outgoing; integer id |
-| `backend/dot_friends_backend.gd` | `DotFriendsBackend`: the interface. Every method may await; call them all with `await` |
-| `backend/dot_friends_backend_app.gd` | `DotFriendsBackendApp`: the site as the player, through GameSpice Auth's `post_app`/`get_app` (preferred), a token and a `DotHttp`, or `request_fn` |
+| `core/dot_presence.gd` | `GSPresence`: status, app, server, party, joinable, detail, when. Offline is a blank. `same_as`, `has_destination` |
+| `core/dot_friend.gd` | `GSFriend`: one friend and their presence, as `GET friends` returns them |
+| `core/dot_friend_request.gd` | `GSFriendRequest`: one pending request, incoming or outgoing; integer id |
+| `backend/dot_friends_backend.gd` | `GSFriendsBackend`: the interface. Every method may await; call them all with `await` |
+| `backend/dot_friends_backend_app.gd` | `GSFriendsBackendApp`: the site as the player, through GameSpice Auth's `post_app`/`get_app` (preferred), a token and a `GSHttp`, or `request_fn` |
 | `backend/dot_friends_local_hub.gd`, `dot_friends_backend_local.gd` | the site's rules in-process: LAN, offline, suites. One hub, one backend per person |
-| `dot_friends_config.gd` | `DotFriendsConfig`: poll, heartbeat and debounce timings |
-| `runtime/dot_friends_client.gd` | `DotFriendsClient`: the player's node. Polls, posts presence, diffs snapshots into signals, joins a friend |
+| `dot_friends_config.gd` | `GSFriendsConfig`: poll, heartbeat and debounce timings |
+| `runtime/dot_friends_client.gd` | `GSFriendsClient`: the player's node. Polls, posts presence, diffs snapshots into signals, joins a friend |
 | `examples/friends_selftest.tscn` | the suite; no network, nothing written to `user://` |
 
 Paths except `examples/` and `docs/` are in `addons/dot_friends/`.
@@ -36,7 +36,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 
 ## Rules that bite
 
-- `DotFriendsLocalHub` is the site's friend router rule for rule; a change on the site needs the same change here, in the contract and in the suite. [contract](docs/backbone-contract.md#what-dot-friends-duplicates-on-purpose)
+- `GSFriendsLocalHub` is the site's friend router rule for rule; a change on the site needs the same change here, in the contract and in the suite. [contract](docs/backbone-contract.md#what-dot-friends-duplicates-on-purpose)
 - Refusal keys are the site's (`locales/en/friends.json`); `friends.join.deny.*` are this addon's. Never put anything but a key in `detail`. [design](docs/design.md#refusals-carry-keys-and-detail-stays-a-key)
 - Offline is blank, for expiry, an offline post and a hidden member alike. [design](docs/design.md#offline-is-a-blank)
 - Heartbeat at most half the site's lifetime (`validate()`); debounce from the first change of a burst; `go_offline()` posts at once. [design](docs/design.md#presence-is-posted-on-a-heartbeat-and-on-an-edge)
