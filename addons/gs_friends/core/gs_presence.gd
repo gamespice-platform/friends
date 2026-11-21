@@ -14,7 +14,7 @@ extends RefCounted
 ## while "offline" would not be hidden.
 ##
 ## [b]Ids are the site's types.[/b] [member server_id] is [code]Server.id[/code], an integer,
-## as dot-party has it; [member party_id] is a decimal [b]string[/b], because a party id can
+## as gs-party has it; [member party_id] is a decimal [b]string[/b], because a party id can
 ## pass 2^53 and JSON would round it into somebody else's party.
 
 enum Status { OFFLINE, ONLINE, IN_GAME, AWAY }
@@ -39,7 +39,7 @@ var app_name: String = ""
 var server_id: int = 0
 var server_name: String = ""
 
-## The dot-party party id, a decimal string. Empty when in none.
+## The gs-party party id, a decimal string. Empty when in none.
 var party_id: String = ""
 
 ## Whether friends may join: their party if [member party_id] is set, otherwise their server.

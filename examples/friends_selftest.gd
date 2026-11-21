@@ -1,6 +1,6 @@
 extends Node
 
-## Exercises dot-friends with no network: a hub, several people, their clients, and a fake site.
+## Exercises gs-friends with no network: a hub, several people, their clients, and a fake site.
 ##
 ## [b]Section 1 parses the contract's own JSON[/b], field for field, because a parser checked
 ## only against JSON this suite wrote from the parser would agree with itself about a shape
@@ -32,7 +32,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	_line("dot-friends self-test")
+	_line("gs-friends self-test")
 	_line("")
 
 	_test_shapes()
@@ -719,7 +719,7 @@ func _app_backend_through_auth() -> void:
 	via_auth.client = auth
 	auth.answer = GSResult.success({"clx1": {"status": "away"}})
 	var through := await via_auth.fetch_presence(PackedStringArray(["clx1"]))
-	_check(through.ok and auth.calls[0][0] == "GET" and auth.calls[0][1] == "presence" and (auth.calls[0][2] as Dictionary)["userIds"] == "clx1", "through dot-auth's client, the query goes as a query")
+	_check(through.ok and auth.calls[0][0] == "GET" and auth.calls[0][1] == "presence" and (auth.calls[0][2] as Dictionary)["userIds"] == "clx1", "through gs-auth's client, the query goes as a query")
 	auth.answer = GSResult.failure(GSError.make(GSError.CODE_FORBIDDEN, "This member is not accepting friend requests.", "friends.request.deny.closed"))
 	var closed := await via_auth.send_request("clx9")
 	_check(not closed.ok and closed.error.detail == "friends.request.deny.closed" and auth.calls[1][2] == {"userId": "clx9"}, "and a refusal keeps the site's key")

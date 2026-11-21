@@ -6,13 +6,13 @@ extends EditorPlugin
 ## No autoloads: the suite has four people in one process, each with their own client, and
 ## a global would make them one person.
 
-const _ICON := "res://addons/dot_friends/icon_placeholder.svg"
+const _ICON := "res://addons/gs_friends/icon_placeholder.svg"
 
 const _TYPES := [
 	[
 		"GSFriendsClient",
 		"Node",
-		"res://addons/dot_friends/runtime/dot_friends_client.gd",
+		"res://addons/gs_friends/runtime/gs_friends_client.gd",
 	],
 ]
 

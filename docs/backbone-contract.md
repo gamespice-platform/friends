@@ -28,7 +28,7 @@ Request  = { id, userId, displayName, createdAt }
 ```
 
 - `serverId` is the site's `Server.id`, an integer, as GameSpice Party already has it.
-- `partyId` is a **decimal string**, as dot-party's party ids are: they can pass 2^53, and JSON would round one into somebody else's party.
+- `partyId` is a **decimal string**, as gs-party's party ids are: they can pass 2^53, and JSON would round one into somebody else's party.
 - `Request.id` is the site's `UserFriendship.id`, an integer. It goes back as `requestId` exactly as it came.
 - `Request.userId` is the **other** person: the sender of an incoming request, the addressee of an outgoing one.
 - `appId` and `appName` come from the **token**, never from the post. A client cannot claim to be in a game it is not.

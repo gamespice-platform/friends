@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="dot-friends"
+config/name="gs-friends"
 config/description="The player's friends list and presence on the TMC backbone: who is online and where, a presence heartbeat, and joining a friend through their party or their server."
 run/main_scene="res://examples/friends_selftest.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -23,7 +23,7 @@ window/size/viewport_height=900
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/dot_friends/plugin.cfg")
+enabled=PackedStringArray("res://addons/gs_friends/plugin.cfg")
 
 [importer_defaults]
 

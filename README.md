@@ -6,14 +6,14 @@ Part of the [**GameSpice**](https://gamespice.net) collection: modular, MIT-lice
 
 ## Install
 
-Copy `addons/dot_friends/` and [GameSpice Core](https://github.com/gamespice-platform/core)'s `addons/dot_core/` into your project and enable dot-friends in **Project > Project Settings > Plugins**. dot-core is the only dependency. dot-auth, dot-party and your connect code are reached through callables and never named.
+Copy `addons/gs_friends/` and [GameSpice Core](https://github.com/gamespice-platform/core)'s `addons/gs_core/` into your project and enable gs-friends in **Project > Project Settings > Plugins**. gs-core is the only dependency. gs-auth, gs-party and your connect code are reached through callables and never named.
 
 ## Use
 
 ```gdscript
 var friends := GSFriendsClient.new()
 var app := GSFriendsBackendApp.new()
-app.client = auth          # dot-auth's GSAuthClient: it holds the token and refreshes it
+app.client = auth          # gs-auth's GSAuthClient: it holds the token and refreshes it
 friends.backend = app
 friends.join_party_fn = func(party_id: String, _friend: GSFriend) -> GSResult:
     return await party.join(party_id)          # a GSPartyClient, if the game has parties

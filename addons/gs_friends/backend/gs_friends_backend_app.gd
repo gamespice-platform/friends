@@ -21,7 +21,7 @@ const CHANNEL := "friends.app"
 ## What the site allows in one [code]GET presence[/code].
 const PRESENCE_BATCH_MAX := 100
 
-const _NO_ROUTES := "this site has no app friends routes (an older or a different site); see dot-friends' docs/backbone-contract.md"
+const _NO_ROUTES := "this site has no app friends routes (an older or a different site); see gs-friends' docs/backbone-contract.md"
 
 ## Anything with [code]post_app(path, body)[/code] and [code]get_app(path, query)[/code]
 ## returning the envelope's data. Preferred over [member token_fn] when set.

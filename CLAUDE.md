@@ -4,7 +4,7 @@ The player's friends list and presence, from the TMC backbone: who is online, in
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is specific to friends. Anything that talks to website-city: [docs/backbone.md](../../docs/backbone.md).
 
-**The distributable is `addons/dot_friends/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored). dot-auth's client, dot-party's client and the game's connect function are reached by duck typing and never named.
+**The distributable is `addons/gs_friends/`.** It requires [GameSpice Core](../gs-core) and nothing else (`ln -s ../../gs-core/addons/gs_core addons/gs_core`, gitignored). gs-auth's client, gs-party's client and the game's connect function are reached by duck typing and never named.
 
 ## Read before
 
@@ -18,17 +18,17 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 
 | Path | What |
 | --- | --- |
-| `core/dot_presence.gd` | `GSPresence`: status, app, server, party, joinable, detail, when. Offline is a blank. `same_as`, `has_destination` |
-| `core/dot_friend.gd` | `GSFriend`: one friend and their presence, as `GET friends` returns them |
-| `core/dot_friend_request.gd` | `GSFriendRequest`: one pending request, incoming or outgoing; integer id |
-| `backend/dot_friends_backend.gd` | `GSFriendsBackend`: the interface. Every method may await; call them all with `await` |
-| `backend/dot_friends_backend_app.gd` | `GSFriendsBackendApp`: the site as the player, through GameSpice Auth's `post_app`/`get_app` (preferred), a token and a `GSHttp`, or `request_fn` |
-| `backend/dot_friends_local_hub.gd`, `dot_friends_backend_local.gd` | the site's rules in-process: LAN, offline, suites. One hub, one backend per person |
-| `dot_friends_config.gd` | `GSFriendsConfig`: poll, heartbeat and debounce timings |
-| `runtime/dot_friends_client.gd` | `GSFriendsClient`: the player's node. Polls, posts presence, diffs snapshots into signals, joins a friend |
+| `core/gs_presence.gd` | `GSPresence`: status, app, server, party, joinable, detail, when. Offline is a blank. `same_as`, `has_destination` |
+| `core/gs_friend.gd` | `GSFriend`: one friend and their presence, as `GET friends` returns them |
+| `core/gs_friend_request.gd` | `GSFriendRequest`: one pending request, incoming or outgoing; integer id |
+| `backend/gs_friends_backend.gd` | `GSFriendsBackend`: the interface. Every method may await; call them all with `await` |
+| `backend/gs_friends_backend_app.gd` | `GSFriendsBackendApp`: the site as the player, through GameSpice Auth's `post_app`/`get_app` (preferred), a token and a `GSHttp`, or `request_fn` |
+| `backend/gs_friends_local_hub.gd`, `gs_friends_backend_local.gd` | the site's rules in-process: LAN, offline, suites. One hub, one backend per person |
+| `gs_friends_config.gd` | `GSFriendsConfig`: poll, heartbeat and debounce timings |
+| `runtime/gs_friends_client.gd` | `GSFriendsClient`: the player's node. Polls, posts presence, diffs snapshots into signals, joins a friend |
 | `examples/friends_selftest.tscn` | the suite; no network, nothing written to `user://` |
 
-Paths except `examples/` and `docs/` are in `addons/dot_friends/`.
+Paths except `examples/` and `docs/` are in `addons/gs_friends/`.
 
 ## Running and testing
 
@@ -36,7 +36,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 
 ## Rules that bite
 
-- `GSFriendsLocalHub` is the site's friend router rule for rule; a change on the site needs the same change here, in the contract and in the suite. [contract](docs/backbone-contract.md#what-dot-friends-duplicates-on-purpose)
+- `GSFriendsLocalHub` is the site's friend router rule for rule; a change on the site needs the same change here, in the contract and in the suite. [contract](docs/backbone-contract.md#what-gs-friends-duplicates-on-purpose)
 - Refusal keys are the site's (`locales/en/friends.json`); `friends.join.deny.*` are this addon's. Never put anything but a key in `detail`. [design](docs/design.md#refusals-carry-keys-and-detail-stays-a-key)
 - Offline is blank, for expiry, an offline post and a hidden member alike. [design](docs/design.md#offline-is-a-blank)
 - Heartbeat at most half the site's lifetime (`validate()`); debounce from the first change of a burst; `go_offline()` posts at once. [design](docs/design.md#presence-is-posted-on-a-heartbeat-and-on-an-edge)

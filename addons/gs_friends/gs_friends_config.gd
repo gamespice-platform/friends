@@ -30,7 +30,7 @@ const PRESENCE_TTL_SEC := 120.0
 
 
 func env_prefix() -> String:
-	return "DOT_FRIENDS_"
+	return "GS_FRIENDS_"
 
 
 func cli_prefix() -> String:
