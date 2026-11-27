@@ -54,6 +54,10 @@ godot --headless --path . res://examples/friends_selftest.tscn
 
 ## Used by
 
+### Zee's Games
+
+Zee's Games is a collection of games I made on GameSpice, for demonstration and for fun. They show what the platform can do, and they run on live servers you can join. Anybody can create games on GameSpice, and each addon is its own repository and can be used separately from the games and from the rest of GameSpice.
+
 No shipped game uses it yet; the self-test scene is the only place it runs.
 
 The whole collection is at [zeesgames.com](https://zeesgames.com).
