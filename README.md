@@ -2,7 +2,7 @@
 
 A friends list for your game, wired to the TMC website: who is online, what they are playing, on which server and in which party, and a Join button that takes a player to where their friend is.
 
-Part of the [**GameSpice**](https://gamespice.net) collection: modular, MIT-licensed building blocks for games on the GameSpice platform (only the TMC website back end is closed). It was built with Claude Code and its headless suite passes, but little of it has met real players yet, so expect rough edges and please report what you find.
+gs-friends is a [GameSpice](https://gamespice.net) addon under the MIT licence, built with Claude Code. Its headless suite is `examples/friends_selftest.tscn`. It is not a shelf library: the games in [Zee's Games](https://zeesgames.com) are built on the GameSpice addons and run on live servers, so the addons get used in real play.
 
 ## Install
 
@@ -51,6 +51,12 @@ A refusal carries a reason key such as `friends.request.deny.pending` in `GSErro
 godot --headless --path . --import
 godot --headless --path . res://examples/friends_selftest.tscn
 ```
+
+## Used by
+
+No shipped game uses it yet; the self-test scene is the only place it runs.
+
+The whole collection is at [zeesgames.com](https://zeesgames.com).
 
 ## Licence
 
